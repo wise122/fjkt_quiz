@@ -116,7 +116,7 @@ const SoloChallengeModal = () => {
 
   return (
     <>
-      <Button onClick={onOpen} colorScheme="teal" size="lg" w="full" fontWeight="bold" borderRadius="full">
+      <Button onClick={onOpen} colorScheme="red" size="lg" w="full" fontWeight="bold" borderRadius="full">
         🎯 Solo Challenge
       </Button>
 
@@ -153,7 +153,7 @@ const SoloChallengeModal = () => {
                 borderRadius="full"
               />
 
-              <Button onClick={handleStartSolo} colorScheme="teal" size="lg" w="full" fontWeight="bold" borderRadius="full">
+              <Button onClick={handleStartSolo} colorScheme="red" size="lg" w="full" fontWeight="bold" borderRadius="full">
                 🚀 Mulai
               </Button>
             </VStack>
