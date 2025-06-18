@@ -7,6 +7,7 @@ import VersusRoom from './screens/VersusRoom';
 import SuggestScreen from './screens/SuggestScreen';
 import SoloChallenge from './screens/SoloChallenge';
 import BattleScreen from './screens/BattleScreen';
+import Leaderboard from "./screens/Leaderboard";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/versus/room/:roomCode" element={<VersusRoom />} />
         <Route path="/suggest" element={<SuggestScreen />} />
         <Route path="/solo" element={<SoloChallenge />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/battle" element={<BattleScreen />} />
       </Routes>
       

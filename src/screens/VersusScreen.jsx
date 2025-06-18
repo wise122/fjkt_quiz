@@ -31,12 +31,14 @@ const VersusScreen = () => {
   useEffect(() => {
     if (!username) return;
 
-    socket.emit("findMatch", { username, avatar, member });
+    // Saat pertama konek atau reconnect
+    const handleConnect = () => {
+      console.log("🔁 Connected, sending findMatch...");
+      socket.emit("findMatch", { username, avatar, member });
+    };
 
-    socket.on("battleStarted", ({ roomId }) => {
-      console.log("🔥 Battle started, navigating to battle screen");
-      navigate(`/battle?roomId=${roomId}&playerId=${playerId}`);
-    });
+    socket.on("connect", handleConnect);
+    handleConnect(); // emit langsung saat pertama kali
 
     socket.on("matchFound", (data) => {
       setRoomId(data.roomId);
@@ -45,6 +47,10 @@ const VersusScreen = () => {
       setPlayerIndex(data.playerIndex);
       setPlayer({ name: data.playerName, avatar: data.playerAvatar, member: data.playerMember });
       setOpponent({ name: data.opponentName, avatar: data.opponentAvatar, member: data.opponentMember });
+    });
+
+    socket.on("battleStarted", ({ roomId }) => {
+      navigate(`/battle?roomId=${roomId}&playerId=${playerId}`);
     });
 
     socket.on("playerReadyUpdate", ({ player1Ready, player2Ready }) => {
@@ -70,12 +76,13 @@ const VersusScreen = () => {
     });
 
     return () => {
+      socket.off("connect", handleConnect);
       socket.off("matchFound");
       socket.off("battleStarted");
       socket.off("playerReadyUpdate");
       socket.off("opponentLeft");
     };
-  }, [username, avatar, member, playerIndex, toast]);
+  }, [username, avatar, member, playerIndex, toast, navigate, playerId]);
 
   const handleReady = () => {
     setIsMyReady(true);
@@ -83,8 +90,12 @@ const VersusScreen = () => {
   };
 
   const handleStart = () => {
-    console.log("🚀 Host starting battle");
     socket.emit("startBattle", { roomId });
+  };
+
+  const handleLeave = () => {
+    socket.emit("leaveRoom", { roomId });
+    window.location.href = "/";
   };
 
   return (
@@ -132,10 +143,7 @@ const VersusScreen = () => {
         </Text>
 
         <VStack spacing={3}>
-          <Button colorScheme="blue" onClick={() => {
-            socket.emit("leaveRoom", { roomId });
-            window.location.href = "/";
-          }}>
+          <Button colorScheme="blue" onClick={handleLeave}>
             🏠 Kembali ke Beranda
           </Button>
 

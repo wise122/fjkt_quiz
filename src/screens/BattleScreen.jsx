@@ -7,7 +7,7 @@ import {
 import { FaClock, FaStar, FaQuestionCircle } from "react-icons/fa";
 import io from "socket.io-client";
 
-const socket = io("https://q.sfinbusinesssolution.net");
+const socket = io("https://q.sfinbusinesssolution.net"); // ✅ Ganti ke server kamu
 
 const BattleScreen = () => {
   const [searchParams] = useSearchParams();
@@ -23,6 +23,7 @@ const BattleScreen = () => {
   const [timeLeft, setTimeLeft] = useState(15);
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!roomId || !playerId) {
@@ -30,70 +31,85 @@ const BattleScreen = () => {
     }
   }, [roomId, playerId, navigate]);
 
-  // Listen socket events
   useEffect(() => {
-    socket.on("newQuestion", (data) => {
-      setQuestion(data);
+    if (roomId && playerId) {
+      socket.emit("readyToStart", { roomId, playerId });
+    }
+  }, [roomId, playerId]);
+
+  useEffect(() => {
+    const handleNewQuestion = (data) => {
+      setQuestion(data.question);
+      setQuestionNumber(data.currentNumber);
+      setTotalQuestions(data.totalQuestions);
       setTimeLeft(15);
       setSelected(null);
-    });
+      setLoading(false);
+    };
 
-    socket.on("answerResult", ({ playerId: answeredId, correct }) => {
-      if (answeredId === playerId && correct) {
-        setScore(prev => prev + 1);
-        toast({
-          title: "Benar!",
-          description: "Kamu mendapatkan 1 poin!",
-          status: "success",
-          duration: 1000,
-          isClosable: true,
-        });
-      } else if (answeredId === playerId && !correct) {
-        toast({
-          title: "Salah!",
-          description: "Jawaban kamu salah.",
-          status: "error",
-          duration: 1000,
-          isClosable: true,
-        });
+    const handleAnswerResult = ({ playerId: answeredId, correct }) => {
+      if (answeredId === playerId) {
+        if (correct) {
+          setScore(prev => prev + 1);
+          toast({
+            title: "Benar!",
+            description: "Kamu mendapatkan 1 poin!",
+            status: "success",
+            duration: 1000,
+            isClosable: true,
+          });
+        } else {
+          toast({
+            title: "Salah!",
+            description: "Jawaban kamu salah.",
+            status: "error",
+            duration: 1000,
+            isClosable: true,
+          });
+        }
       }
-    });
+    };
 
-    socket.on("battleFinished", ({ scores }) => {
+    const handleBattleFinished = ({ scores }) => {
       const myScore = scores[playerId] || 0;
       navigate(`/result?roomId=${roomId}&playerId=${playerId}&score=${myScore}`);
-    });
+    };
+
+    socket.on("newQuestion", handleNewQuestion);
+    socket.on("answerResult", handleAnswerResult);
+    socket.on("battleFinished", handleBattleFinished);
 
     return () => {
-      socket.off("newQuestion");
-      socket.off("answerResult");
-      socket.off("battleFinished");
+      socket.off("newQuestion", handleNewQuestion);
+      socket.off("answerResult", handleAnswerResult);
+      socket.off("battleFinished", handleBattleFinished);
     };
   }, [playerId, roomId, navigate, toast]);
 
   useEffect(() => {
     if (timeLeft === 0 && selected === null) {
-      handleAnswer(null); // Auto submit kosong kalau waktu habis
+      handleAnswer(null);
     }
-  }, [timeLeft]);
+  }, [timeLeft, selected]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
   const handleAnswer = (option) => {
-    if (selected !== null) return; // Prevent double click
+    if (selected !== null) return;
     setSelected(option);
     socket.emit("submitAnswer", { roomId, playerId, answer: option });
   };
 
-  if (!question) {
+  if (loading) {
     return (
       <Center minH="100vh" bgGradient="linear(to-br, pink.50, pink.100)">
         <Spinner size="xl" color="pink.400" />
+        <Text mt={3}>Menunggu pertanyaan...</Text>
       </Center>
     );
   }
@@ -114,7 +130,7 @@ const BattleScreen = () => {
 
         <Box bg="pink.50" p={5} rounded="xl" mb={4} border="1px solid pink">
           <Text fontSize="md" color="gray.500">Soal {questionNumber} dari {totalQuestions}</Text>
-          <Text fontSize="xl" fontWeight="bold" mt={2}>{question.question}</Text>
+          <Text fontSize="xl" fontWeight="bold" mt={2}>{question.text}</Text>
         </Box>
 
         <VStack spacing={3}>

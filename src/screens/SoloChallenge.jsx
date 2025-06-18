@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   Box, Button, Text, VStack, Progress, useToast,
-  HStack, Center, Badge, Spinner
+  HStack, Center, Badge, Spinner, Avatar
 } from "@chakra-ui/react";
 import { FaClock, FaStar } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import questionsData from "../data/questions";
 
@@ -22,7 +22,10 @@ const shuffleArray = (array) => {
 function SoloChallenge() {
   const navigate = useNavigate();
   const toast = useToast();
+  const [searchParams] = useSearchParams();
 
+  const [username, setUsername] = useState("Player");
+  const [avatar, setAvatar] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -34,6 +37,12 @@ function SoloChallenge() {
   useEffect(() => {
     const shuffledQuestions = shuffleArray(questionsData).slice(0, MAX_QUESTIONS);
     setQuestions(shuffledQuestions);
+
+    const usernameParam = searchParams.get("username");
+    const avatarParam = searchParams.get("avatar");
+
+    setUsername(usernameParam || "Player");
+    setAvatar(avatarParam ? decodeURIComponent(avatarParam) : null);
   }, []);
 
   const totalQuestions = questions.length;
@@ -93,6 +102,8 @@ function SoloChallenge() {
         } else {
           setIsFinished(true);
           saveScore();
+          saveToLeaderboard();
+          saveToLeaderboardBackend();
         }
       }, 400);
     }, 600);
@@ -102,6 +113,36 @@ function SoloChallenge() {
     const prevScores = JSON.parse(localStorage.getItem("soloScores") || "[]");
     const newScores = [...prevScores, { date: new Date().toISOString(), score }];
     localStorage.setItem("soloScores", JSON.stringify(newScores));
+  };
+
+  const saveToLeaderboard = () => {
+    const prevLeaders = JSON.parse(localStorage.getItem("soloLeaderboard") || "[]");
+    const newEntry = {
+      username,
+      avatar,
+      score,
+      date: new Date().toISOString(),
+    };
+    const updatedLeaders = [...prevLeaders, newEntry];
+    updatedLeaders.sort((a, b) => b.score - a.score);
+    localStorage.setItem("soloLeaderboard", JSON.stringify(updatedLeaders));
+  };
+
+  const saveToLeaderboardBackend = async () => {
+    try {
+      await fetch("https://q.sfinbusinesssolution.net/api/leaderboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          avatar,
+          score,
+          date: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.error("Gagal kirim ke backend leaderboard:", err);
+    }
   };
 
   const handleBack = () => {
@@ -133,6 +174,17 @@ function SoloChallenge() {
         <Badge position="absolute" top={4} right={4} colorScheme="pink">
           Solo Mode
         </Badge>
+
+        <VStack mb={4}>
+          <Avatar
+            size="xl"
+            name={username}
+            src={avatar}
+            bg="pink.200"
+            color="white"
+          />
+          <Text fontSize="xl" fontWeight="bold">{username}</Text>
+        </VStack>
 
         <Progress
           value={((currentIndex + (isFinished ? 1 : 0)) / totalQuestions) * 100}

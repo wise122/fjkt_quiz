@@ -14,6 +14,7 @@ import { keyframes } from "@emotion/react";
 import { MdQuiz, MdFeedback, MdStar } from "react-icons/md"; // Tambahkan ikon baru
 import { useNavigate } from "react-router-dom";
 import VersusModal from "../components/VersusModal";
+import SoloModal from "../components/SoloModal";
 
 const gradientAnimation = keyframes`
   0% { background-position: 0% 50%; }
@@ -101,18 +102,7 @@ function Home() {
 
             <VersusModal />
 
-           
-            <Button
-              leftIcon={<MdStar />}
-              colorScheme="red"
-              size="lg"
-              w="full"
-              fontWeight="bold"
-              onClick={() => handleNavigate("solo")}
-              borderRadius="full"
-            >
-              ⭐ Solo Challenge
-            </Button>
+            <SoloModal />
 
             <Button
               colorScheme="red"
