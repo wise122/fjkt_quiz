@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './screens/Home';
 import Quiz from './screens/PracticeQuiz';
@@ -8,6 +8,9 @@ import SuggestScreen from './screens/SuggestScreen';
 import SoloChallenge from './screens/SoloChallenge';
 import BattleScreen from './screens/BattleScreen';
 import Leaderboard from "./screens/Leaderboard";
+
+
+
 
 function App() {
   return (

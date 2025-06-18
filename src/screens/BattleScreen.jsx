@@ -1,158 +1,109 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
 import {
-  Box, Heading, VStack, Text, Button, Progress, Center,
-  HStack, Badge, useToast, Spinner
+  Box, Button, Center, Heading, VStack, Text, Progress, useToast
 } from "@chakra-ui/react";
-import { FaClock, FaStar, FaQuestionCircle } from "react-icons/fa";
-import io from "socket.io-client";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
-const socket = io("https://q.sfinbusinesssolution.net"); // ✅ Ganti ke server kamu
+import { getSocket } from "../socket";
+
+const socket = getSocket();  // <- kita ambil socket dari sini
 
 const BattleScreen = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const toast = useToast();
-
   const roomId = searchParams.get("roomId");
   const playerId = searchParams.get("playerId");
 
+  const toast = useToast();
+  const navigate = useNavigate();
+  const socket = getSocket();
+
   const [question, setQuestion] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [answerResult, setAnswerResult] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionNumber, setQuestionNumber] = useState(1);
-  const [totalQuestions, setTotalQuestions] = useState(5);
-  const [timeLeft, setTimeLeft] = useState(15);
-  const [score, setScore] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [totalQuestions, setTotalQuestions] = useState(10);
 
   useEffect(() => {
-    if (!roomId || !playerId) {
-      navigate("/");
-    }
-  }, [roomId, playerId, navigate]);
+    if (!socket) return;
 
-  useEffect(() => {
-    if (roomId && playerId) {
-      socket.emit("readyToStart", { roomId, playerId });
-    }
-  }, [roomId, playerId]);
-
-  useEffect(() => {
-    const handleNewQuestion = (data) => {
-      setQuestion(data.question);
-      setQuestionNumber(data.currentNumber);
+    socket.on("newQuestion", (data) => {
+      setQuestion(data);
+      setSelectedAnswer(null);
+      setAnswerResult(null);
+      setIsSubmitting(false); 
+      setQuestionNumber(data.questionNumber);
       setTotalQuestions(data.totalQuestions);
-      setTimeLeft(15);
-      setSelected(null);
-      setLoading(false);
-    };
+    });
 
-    const handleAnswerResult = ({ playerId: answeredId, correct }) => {
-      if (answeredId === playerId) {
-        if (correct) {
-          setScore(prev => prev + 1);
-          toast({
-            title: "Benar!",
-            description: "Kamu mendapatkan 1 poin!",
-            status: "success",
-            duration: 1000,
-            isClosable: true,
-          });
-        } else {
-          toast({
-            title: "Salah!",
-            description: "Jawaban kamu salah.",
-            status: "error",
-            duration: 1000,
-            isClosable: true,
-          });
-        }
-      }
-    };
+    socket.on("answerResult", (result) => {
+      setAnswerResult(result);
+    });
 
-    const handleBattleFinished = ({ scores }) => {
-      const myScore = scores[playerId] || 0;
-      navigate(`/result?roomId=${roomId}&playerId=${playerId}&score=${myScore}`);
-    };
-
-    socket.on("newQuestion", handleNewQuestion);
-    socket.on("answerResult", handleAnswerResult);
-    socket.on("battleFinished", handleBattleFinished);
+    socket.on("battleFinished", () => {
+      toast({
+        title: "Battle selesai!",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      navigate("/");
+    });
 
     return () => {
-      socket.off("newQuestion", handleNewQuestion);
-      socket.off("answerResult", handleAnswerResult);
-      socket.off("battleFinished", handleBattleFinished);
+      socket.off("newQuestion");
+      socket.off("answerResult");
+      socket.off("battleFinished");
     };
-  }, [playerId, roomId, navigate, toast]);
+  }, [socket, toast, navigate]);
 
-  useEffect(() => {
-    if (timeLeft === 0 && selected === null) {
-      handleAnswer(null);
-    }
-  }, [timeLeft, selected]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleAnswer = (option) => {
-    if (selected !== null) return;
-    setSelected(option);
-    socket.emit("submitAnswer", { roomId, playerId, answer: option });
+  const handleAnswer = (answer) => {
+    setSelectedAnswer(answer);
+    setIsSubmitting(true);
+    socket.emit("submitAnswer", { roomId, playerId, answer });
   };
 
-  if (loading) {
-    return (
-      <Center minH="100vh" bgGradient="linear(to-br, pink.50, pink.100)">
-        <Spinner size="xl" color="pink.400" />
-        <Text mt={3}>Menunggu pertanyaan...</Text>
-      </Center>
-    );
-  }
-
   return (
-    <Center minH="100vh" bgGradient="linear(to-br, pink.50, pink.100)" px={4}>
-      <Box bg="white" p={8} borderRadius="2xl" shadow="xl" w="full" maxW="lg" textAlign="center" border="3px solid" borderColor="pink.300" position="relative">
-        <Badge position="absolute" top={4} right={4} colorScheme="pink">
-          Room: {roomId}
-        </Badge>
+    <Center minH="100vh" bg="#FFF5F7" px={4}>
+      <Box bg="white" p={8} borderRadius="xl" shadow="md" border="2px solid #FBB6CE" maxW="md" w="full" textAlign="center">
+        <Heading size="md" color="pink.500" mb={4}>🎯 Battle Quiz</Heading>
 
-        <Heading size="lg" mb={3} color="pink.500" display="flex" alignItems="center" justifyContent="center">
-          <FaQuestionCircle style={{ marginRight: "8px" }} />
-          JKT48 Quiz Battle
-        </Heading>
+        {question ? (
+          <>
+            <Progress value={(questionNumber / totalQuestions) * 100} mb={4} />
+            <Text fontSize="lg" mb={6}>{question.question}</Text>
 
-        <Progress value={(questionNumber / totalQuestions) * 100} colorScheme="pink" mb={4} borderRadius="full" height="8px" />
+            <VStack spacing={4}>
+              {question.options.map((opt, idx) => (
+                <Button
+                  key={idx}
+                  w="100%"
+                  colorScheme={
+                    answerResult ? (
+                      opt === question.correctAnswer
+                        ? "green"
+                        : (selectedAnswer === opt ? "red" : "gray")
+                    ) : (selectedAnswer === opt ? "blue" : "pink")
+                  }
+                  isDisabled={!!answerResult || isSubmitting}
+                  onClick={() => handleAnswer(opt)}
+                >
+                  {opt}
+                </Button>
+              ))}
+            </VStack>
 
-        <Box bg="pink.50" p={5} rounded="xl" mb={4} border="1px solid pink">
-          <Text fontSize="md" color="gray.500">Soal {questionNumber} dari {totalQuestions}</Text>
-          <Text fontSize="xl" fontWeight="bold" mt={2}>{question.text}</Text>
-        </Box>
-
-        <VStack spacing={3}>
-          {question.options.map((opt, index) => (
-            <Button
-              key={index}
-              size="lg"
-              colorScheme={selected === opt ? "pink" : "gray"}
-              variant={selected === opt ? "solid" : "outline"}
-              w="full"
-              onClick={() => handleAnswer(opt)}
-              isDisabled={selected !== null}
-            >
-              {opt}
-            </Button>
-          ))}
-        </VStack>
-
-        <HStack mt={6} justify="space-between">
-          <HStack><FaClock color="gray" /><Text>{timeLeft} detik</Text></HStack>
-          <HStack><FaStar color="gold" /><Text>{score} Poin</Text></HStack>
-        </HStack>
+            {answerResult && (
+              <Box mt={4}>
+                <Text color="green.500" fontWeight="bold">
+                  {answerResult.answers[playerId]?.isCorrect ? "✅ Jawaban kamu benar!" : "❌ Jawaban kamu salah!"}
+                </Text>
+              </Box>
+            )}
+          </>
+        ) : (
+          <Text>Menunggu pertanyaan berikutnya...</Text>
+        )}
       </Box>
     </Center>
   );

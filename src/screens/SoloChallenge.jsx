@@ -130,7 +130,7 @@ function SoloChallenge() {
 
   const saveToLeaderboardBackend = async () => {
     try {
-      await fetch("https://q.sfinbusinesssolution.net/api/leaderboard", {
+      await fetch("http://localhost:5000/api/leaderboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

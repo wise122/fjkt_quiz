@@ -5,11 +5,10 @@ import {
 } from "@chakra-ui/react";
 import { FaCheckCircle } from "react-icons/fa";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import io from "socket.io-client";
-
-const socket = io("https://q.sfinbusinesssolution.net");
+import { getSocket } from "../socket";
 
 const VersusScreen = () => {
+  const socket = getSocket();
   const toast = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -17,8 +16,8 @@ const VersusScreen = () => {
   const avatar = searchParams.get("avatar");
   const member = searchParams.get("member");
 
-  const [roomId, setRoomId] = useState(null);
-  const [playerId, setPlayerId] = useState(null);
+  const [roomId, setRoomId] = useState(localStorage.getItem("roomId") || null);
+  const [playerId, setPlayerId] = useState(localStorage.getItem("playerId") || null);
   const [isHost, setIsHost] = useState(false);
   const [playerIndex, setPlayerIndex] = useState(null);
 
@@ -27,33 +26,45 @@ const VersusScreen = () => {
 
   const [isMyReady, setIsMyReady] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
+  const [isMatched, setIsMatched] = useState(localStorage.getItem("isMatched") === "true");
 
   useEffect(() => {
     if (!username) return;
 
-    // Saat pertama konek atau reconnect
     const handleConnect = () => {
-      console.log("🔁 Connected, sending findMatch...");
-      socket.emit("findMatch", { username, avatar, member });
+      console.log("🔁 Connected");
+    
+      // Coba resume session jika ada playerId sebelumnya
+      const storedPlayerId = localStorage.getItem("playerId");
+      if (storedPlayerId) {
+        console.log("🔄 Sending resumeSession...");
+        socket.emit("resumeSession", { previousPlayerId: storedPlayerId });
+      } else {
+        console.log("🔎 Sending findMatch...");
+        socket.emit("findMatch", { username, avatar, member });
+      }
     };
+    
 
-    socket.on("connect", handleConnect);
-    handleConnect(); // emit langsung saat pertama kali
-
-    socket.on("matchFound", (data) => {
+    const handleMatchFound = (data) => {
+      setIsMatched(true);
+      localStorage.setItem("isMatched", "true");
       setRoomId(data.roomId);
       setPlayerId(data.playerId);
+      localStorage.setItem("playerId", data.playerId);
       setIsHost(data.isHost);
       setPlayerIndex(data.playerIndex);
       setPlayer({ name: data.playerName, avatar: data.playerAvatar, member: data.playerMember });
       setOpponent({ name: data.opponentName, avatar: data.opponentAvatar, member: data.opponentMember });
-    });
+      localStorage.setItem("roomId", data.roomId);
+      localStorage.setItem("playerId", data.playerId);
+    };
 
-    socket.on("battleStarted", ({ roomId }) => {
+    const handleBattleStarted = ({ roomId }) => {
       navigate(`/battle?roomId=${roomId}&playerId=${playerId}`);
-    });
+    };
 
-    socket.on("playerReadyUpdate", ({ player1Ready, player2Ready }) => {
+    const handlePlayerReadyUpdate = ({ player1Ready, player2Ready }) => {
       if (playerIndex === 0) {
         setIsMyReady(player1Ready);
         setOpponentReady(player2Ready);
@@ -61,9 +72,9 @@ const VersusScreen = () => {
         setIsMyReady(player2Ready);
         setOpponentReady(player1Ready);
       }
-    });
+    };
 
-    socket.on("opponentLeft", () => {
+    const handleOpponentLeft = () => {
       setOpponent({ name: "", avatar: "", member: "" });
       setOpponentReady(false);
       toast({
@@ -73,16 +84,38 @@ const VersusScreen = () => {
         duration: 3000,
         isClosable: true,
       });
-    });
+      resetMatch();
+    };
+
+    const resetMatch = () => {
+      setIsMatched(false);
+      setRoomId(null);
+      setPlayerId(null);
+      localStorage.removeItem("isMatched");
+      localStorage.removeItem("roomId");
+      localStorage.removeItem("playerId");
+    };
+
+    // Bind event
+    socket.on("connect", handleConnect);
+    socket.on("matchFound", handleMatchFound);
+    socket.on("battleStarted", handleBattleStarted);
+    socket.on("playerReadyUpdate", handlePlayerReadyUpdate);
+    socket.on("opponentLeft", handleOpponentLeft);
+
+    // Cek langsung saat mount
+    if (socket.connected) {
+      handleConnect();
+    }
 
     return () => {
       socket.off("connect", handleConnect);
-      socket.off("matchFound");
-      socket.off("battleStarted");
-      socket.off("playerReadyUpdate");
-      socket.off("opponentLeft");
+      socket.off("matchFound", handleMatchFound);
+      socket.off("battleStarted", handleBattleStarted);
+      socket.off("playerReadyUpdate", handlePlayerReadyUpdate);
+      socket.off("opponentLeft", handleOpponentLeft);
     };
-  }, [username, avatar, member, playerIndex, toast, navigate, playerId]);
+  }, [username, avatar, member, playerIndex, toast, navigate, playerId, isMatched, socket]);
 
   const handleReady = () => {
     setIsMyReady(true);
@@ -95,6 +128,9 @@ const VersusScreen = () => {
 
   const handleLeave = () => {
     socket.emit("leaveRoom", { roomId });
+    localStorage.removeItem("isMatched");
+    localStorage.removeItem("roomId");
+    localStorage.removeItem("playerId");
     window.location.href = "/";
   };
 
@@ -143,10 +179,7 @@ const VersusScreen = () => {
         </Text>
 
         <VStack spacing={3}>
-          <Button colorScheme="blue" onClick={handleLeave}>
-            🏠 Kembali ke Beranda
-          </Button>
-
+          <Button colorScheme="blue" onClick={handleLeave}>🏠 Kembali ke Beranda</Button>
           {isHost && (
             <Button colorScheme="green" isDisabled={!isMyReady || !opponentReady} onClick={handleStart}>
               🚀 Mulai!
