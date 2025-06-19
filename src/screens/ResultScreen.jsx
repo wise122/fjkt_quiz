@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, Button, Center, Heading, Text, VStack, HStack, Badge, Avatar, Flex } from "@chakra-ui/react";
 import { FaTrophy } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -7,6 +7,22 @@ import { disconnectSocket } from "../socket";
 const ResultScreen = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let audio = null;
+    if (isWinner) {
+      audio = new Audio("/sound/win.mp3");
+      audio.play();
+    }
+  
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio = null;
+      }
+    };
+  }, [isWinner]);
+  
 
   const {
     yourScore = 0,
