@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Box, Button, Center, Heading, Text, VStack, HStack, Badge, Avatar, Flex } from "@chakra-ui/react";
 import { FaTrophy } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -25,20 +25,10 @@ const ResultScreen = () => {
   const isWinner = yourScore > opponentScore;
   const isDraw = yourScore === opponentScore;
 
-  useEffect(() => {
-    let audio = null;
-    if (isWinner) {
-      audio = new Audio("/sounds/win.mp3");
-      audio.play();
-    }
-
-    return () => {
-      if (audio) {
-        audio.pause();
-        audio = null;
-      }
-    };
-  }, [isWinner]);
+  const handlePlaySound = () => {
+    const audio = new Audio("/sounds/win.mp3");
+    audio.play();
+  };
 
   return (
     <Center minH="100vh" bgGradient="linear(to-b, pink.50, pink.100)" px={4}>
@@ -66,6 +56,12 @@ const ResultScreen = () => {
             <Text fontSize="5xl" color="blue.400">{opponentScore}</Text>
           </VStack>
         </Flex>
+
+        {isWinner && (
+          <Button colorScheme="pink" mb={4} onClick={handlePlaySound}>
+            🔊 Putar Suara Kemenangan
+          </Button>
+        )}
 
         <HStack justify="center" spacing={4} mt={6}>
           {isDraw ? (
