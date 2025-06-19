@@ -25,11 +25,6 @@ const ResultScreen = () => {
   const isWinner = yourScore > opponentScore;
   const isDraw = yourScore === opponentScore;
 
-  const handlePlaySound = () => {
-    const audio = new Audio("/sounds/win.mp3");
-    audio.play();
-  };
-
   return (
     <Center minH="100vh" bgGradient="linear(to-b, pink.50, pink.100)" px={4}>
       <Box bg="white" p={8} borderRadius="2xl" shadow="xl" border="2px solid #FBB6CE" maxW="md" w="full" textAlign="center">
@@ -56,12 +51,6 @@ const ResultScreen = () => {
             <Text fontSize="5xl" color="blue.400">{opponentScore}</Text>
           </VStack>
         </Flex>
-
-        {isWinner && (
-          <Button colorScheme="pink" mb={4} onClick={handlePlaySound}>
-            🔊 Putar Suara Kemenangan
-          </Button>
-        )}
 
         <HStack justify="center" spacing={4} mt={6}>
           {isDraw ? (
