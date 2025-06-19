@@ -17,6 +17,8 @@ const ResultScreen = () => {
 
   const handlePlayAgain = () => {
     disconnectSocket();
+    localStorage.clear();
+    sessionStorage.clear();
     navigate("/");
   };
 

@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Button, Center, Heading, VStack, Text, Progress, useToast
+  Box, Button, Center, Heading, VStack, Text, Progress, useToast, CircularProgress, CircularProgressLabel
 } from "@chakra-ui/react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-
 import { getSocket } from "../socket";
-
-const socket = getSocket();  // <- kita ambil socket dari sini
 
 const BattleScreen = () => {
   const [searchParams] = useSearchParams();
@@ -23,7 +20,10 @@ const BattleScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionNumber, setQuestionNumber] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(20);
+  const [timerInterval, setTimerInterval] = useState(null);
 
+  // Handle pertanyaan baru
   useEffect(() => {
     if (!socket) return;
 
@@ -31,25 +31,50 @@ const BattleScreen = () => {
       setQuestion(data);
       setSelectedAnswer(null);
       setAnswerResult(null);
-      setIsSubmitting(false); 
+      setIsSubmitting(false);
       setQuestionNumber(data.questionNumber);
       setTotalQuestions(data.totalQuestions);
+      setTimeLeft(20);
     });
 
     socket.on("answerResult", (result) => {
       setAnswerResult(result);
+      clearInterval(timerInterval);
     });
 
     socket.on("battleFinished", (data) => {
       const { yourScore, opponentScore, totalQuestions, yourAvatar, opponentAvatar } = data;
-      navigate("/result", { state: { yourScore, opponentScore, yourAvatar, opponentAvatar } })
+      navigate("/result", { state: { yourScore, opponentScore, yourAvatar, opponentAvatar } });
     });
+
     return () => {
       socket.off("newQuestion");
       socket.off("answerResult");
       socket.off("battleFinished");
     };
-  }, [socket, toast, navigate]);
+  }, [socket, navigate]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (!question) return;
+    if (timerInterval) clearInterval(timerInterval);
+
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (!selectedAnswer && !isSubmitting) {
+            handleAnswer(null); // Auto submit kosong jika habis waktu
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setTimerInterval(interval);
+
+    return () => clearInterval(interval);
+  }, [question]);
 
   const handleAnswer = (answer) => {
     setSelectedAnswer(answer);
@@ -59,13 +84,16 @@ const BattleScreen = () => {
 
   return (
     <Center minH="100vh" bg="#FFF5F7" px={4}>
-      <Box bg="white" p={8} borderRadius="xl" shadow="md" border="2px solid #FBB6CE" maxW="md" w="full" textAlign="center">
-        <Heading size="md" color="pink.500" mb={4}>🎯 Battle Quiz</Heading>
+      <Box bg="white" p={10} borderRadius="2xl" shadow="xl" border="3px solid #FBB6CE" maxW="lg" w="full" textAlign="center">
+        <Heading size="lg" color="pink.500" mb={6}>🎯 Battle Quiz</Heading>
+
+        <Progress value={(questionNumber / totalQuestions) * 100} mb={6} borderRadius="full" colorScheme="pink" />
 
         {question ? (
           <>
-            <Progress value={(questionNumber / totalQuestions) * 100} mb={4} />
-            <Text fontSize="lg" mb={6}>{question.question}</Text>
+            <Box bg="pink.50" p={6} borderRadius="xl" shadow="md" mb={6} minH="150px">
+              <Text fontSize="xl" fontWeight="semibold">{question.question}</Text>
+            </Box>
 
             <VStack spacing={4}>
               {question.options.map((opt, idx) => (
@@ -81,22 +109,29 @@ const BattleScreen = () => {
                   }
                   isDisabled={!!answerResult || isSubmitting}
                   onClick={() => handleAnswer(opt)}
+                  size="lg"
                 >
                   {opt}
                 </Button>
               ))}
             </VStack>
 
+            <Box mt={6}>
+              <CircularProgress value={(timeLeft / 20) * 100} color="pink.400" size="80px" thickness="10px">
+                <CircularProgressLabel fontSize="xl">{timeLeft}s</CircularProgressLabel>
+              </CircularProgress>
+            </Box>
+
             {answerResult && (
               <Box mt={4}>
-                <Text color="green.500" fontWeight="bold">
+                <Text color="green.500" fontWeight="bold" fontSize="lg">
                   {answerResult.answers[playerId]?.isCorrect ? "✅ Jawaban kamu benar!" : "❌ Jawaban kamu salah!"}
                 </Text>
               </Box>
             )}
           </>
         ) : (
-          <Text>Menunggu pertanyaan berikutnya...</Text>
+          <Text fontSize="lg" fontWeight="medium">Menunggu pertanyaan...</Text>
         )}
       </Box>
     </Center>
