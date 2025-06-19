@@ -8,22 +8,6 @@ const ResultScreen = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let audio = null;
-    if (isWinner) {
-      audio = new Audio("/sound/win.mp3");
-      audio.play();
-    }
-  
-    return () => {
-      if (audio) {
-        audio.pause();
-        audio = null;
-      }
-    };
-  }, [isWinner]);
-  
-
   const {
     yourScore = 0,
     opponentScore = 0,
@@ -40,6 +24,21 @@ const ResultScreen = () => {
 
   const isWinner = yourScore > opponentScore;
   const isDraw = yourScore === opponentScore;
+
+  useEffect(() => {
+    let audio = null;
+    if (isWinner) {
+      audio = new Audio("/sounds/win.mp3");
+      audio.play();
+    }
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio = null;
+      }
+    };
+  }, [isWinner]);
 
   return (
     <Center minH="100vh" bgGradient="linear(to-b, pink.50, pink.100)" px={4}>
