@@ -18,6 +18,7 @@ import {
   Avatar,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
+import { connectSocket } from '../socket';
 
 const members = [
   { name: "Feni Fitriyanti", image: "/images/member/Gen3_feni_fitriyanti.jpg" },
@@ -85,6 +86,7 @@ const VersusModal = () => {
   const [selectedMember, setSelectedMember] = useState(null);
   const toast = useToast();
   const navigate = useNavigate();
+  connectSocket();
 
   const validateUsername = () => {
     if (!username.trim()) {

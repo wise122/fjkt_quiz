@@ -40,16 +40,10 @@ const BattleScreen = () => {
       setAnswerResult(result);
     });
 
-    socket.on("battleFinished", () => {
-      toast({
-        title: "Battle selesai!",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-      navigate("/");
+    socket.on("battleFinished", (data) => {
+      const { yourScore, opponentScore, totalQuestions, yourAvatar, opponentAvatar } = data;
+      navigate("/result", { state: { yourScore, opponentScore, yourAvatar, opponentAvatar } })
     });
-
     return () => {
       socket.off("newQuestion");
       socket.off("answerResult");

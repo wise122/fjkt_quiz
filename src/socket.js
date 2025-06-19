@@ -4,7 +4,7 @@ let socket = null;
 
 export const connectSocket = () => {
   if (!socket) {
-    socket = io("https://q.sfinbusinesssolution.net/");
+    socket = io("https://q.sfinbusinesssolution.net");
     console.log("✅ Socket Connected");
   }
 };

@@ -8,6 +8,7 @@ import SuggestScreen from './screens/SuggestScreen';
 import SoloChallenge from './screens/SoloChallenge';
 import BattleScreen from './screens/BattleScreen';
 import Leaderboard from "./screens/Leaderboard";
+import ResultScreen from "./screens/ResultScreen";
 
 
 
@@ -21,6 +22,7 @@ function App() {
         <Route path="/versus/matchmaking" element={<Versus />} />
         <Route path="/versus/room/:roomCode" element={<VersusRoom />} />
         <Route path="/suggest" element={<SuggestScreen />} />
+        <Route path="/result" element={<ResultScreen />} />
         <Route path="/solo" element={<SoloChallenge />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/battle" element={<BattleScreen />} />
