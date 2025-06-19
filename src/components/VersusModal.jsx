@@ -71,7 +71,7 @@ const members = [
   { name: "Victoria Kimberly", image: "/images/member/Gen12_victoria_kimberly.jpg" },
   { name: "Astrella Virgiananda", image: "/images/member/Gen13_Astrella_Virgiananda.jpg" },
   { name: "Aulia Riza", image: "/images/member/Gen13_Aulia_Riza.jpg" },
-  { name: "Bong Aprili", image: "/images/member/Gen13_Bong_Aprili.jpg" },
+  { name: "Bong Aprili", image: "/images/member/Gen13_Bong_Aprilli.jpg" },
   { name: "Hagia Sopia", image: "/images/member/Gen13_Hagia_Sopia.jpg" },
   { name: "Humaira Ramadhani", image: "/images/member/Gen13_Humaira_Ramadhani.jpg" },
   { name: "Jacqueline Immanuela", image: "/images/member/Gen13_Jacqueline_Immanuela.jpg" },
