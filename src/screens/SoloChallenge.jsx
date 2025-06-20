@@ -101,48 +101,9 @@ function SoloChallenge() {
           setIsTransitioning(false);
         } else {
           setIsFinished(true);
-          saveScore();
-          saveToLeaderboard();
-          saveToLeaderboardBackend();
         }
       }, 400);
     }, 600);
-  };
-
-  const saveScore = () => {
-    const prevScores = JSON.parse(localStorage.getItem("soloScores") || "[]");
-    const newScores = [...prevScores, { date: new Date().toISOString(), score }];
-    localStorage.setItem("soloScores", JSON.stringify(newScores));
-  };
-
-  const saveToLeaderboard = () => {
-    const prevLeaders = JSON.parse(localStorage.getItem("soloLeaderboard") || "[]");
-    const newEntry = {
-      username,
-      avatar,
-      score,
-      date: new Date().toISOString(),
-    };
-    const updatedLeaders = [...prevLeaders, newEntry];
-    updatedLeaders.sort((a, b) => b.score - a.score);
-    localStorage.setItem("soloLeaderboard", JSON.stringify(updatedLeaders));
-  };
-
-  const saveToLeaderboardBackend = async () => {
-    try {
-      await fetch("https://q.sfinbusinesssolution.net/api/leaderboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          avatar,
-          score,
-          date: new Date().toISOString(),
-        }),
-      });
-    } catch (err) {
-      console.error("Gagal kirim ke backend leaderboard:", err);
-    }
   };
 
   const handleBack = () => {
@@ -158,47 +119,37 @@ function SoloChallenge() {
   }
 
   return (
-    <Center minH="100vh" bgGradient="linear(to-br, pink.50, pink.100)" px={4}>
-      <Box position="relative">
-        <Avatar
-          size="xl"
-          name={username}
-          src={avatar}
-          bg="pink.200"
-          color="white"
-          position="absolute"
-          top="-60px"
-          left="50%"
-          transform="translateX(-50%)"
-          border="4px solid white"
-          boxShadow="lg"
-        />
+    <Center minH="100vh" bgGradient="linear(to-br, pink.50, pink.100)" px={4} py={8}>
+      <VStack spacing={6}>
+        {/* Avatar & Username di atas */}
+        <VStack spacing={2}>
+          <Avatar size="2xl" name={username} src={avatar} bg="pink.300" />
+          <Text fontSize="2xl" fontWeight="bold">{username}</Text>
+        </VStack>
 
+        {/* Card Quiz */}
         <Box
           bg="white"
-          p={8}
-          pt={20}
-          borderRadius="2xl"
-          shadow="xl"
+          p={10}
+          borderRadius="3xl"
+          shadow="2xl"
           w="full"
-          maxW="lg"
+          maxW="md"
           textAlign="center"
-          border="3px solid"
-          borderColor="pink.300"
+          border="2px solid"
+          borderColor="pink.200"
           position="relative"
         >
           <Badge position="absolute" top={4} right={4} colorScheme="pink">
-            Solo Mode
+            SOLO MODE
           </Badge>
-
-          <Text fontSize="xl" fontWeight="bold" mt={2}>{username}</Text>
 
           <Progress
             value={((currentIndex + (isFinished ? 1 : 0)) / totalQuestions) * 100}
             colorScheme="pink"
-            mb={4}
+            mb={6}
             borderRadius="full"
-            height="8px"
+            height="10px"
           />
 
           {isFinished ? (
@@ -207,7 +158,7 @@ function SoloChallenge() {
                 Skor Kamu: {score} / {totalQuestions}
               </Text>
               <Button colorScheme="pink" size="lg" rounded="full" onClick={handleBack}>
-                Kembali
+                Kembali ke Home
               </Button>
             </VStack>
           ) : (
@@ -219,20 +170,20 @@ function SoloChallenge() {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.4 }}
               >
-                <VStack spacing={6}>
-                  <Box bg="pink.50" p={5} rounded="xl" mb={4} border="1px solid pink">
-                    <Text fontSize="md" color="gray.500">
+                <VStack spacing={8}>
+                  <Box bg="pink.50" p={5} rounded="xl" border="1px solid pink">
+                    <Text fontSize="md" color="gray.500" mb={2}>
                       Soal {currentIndex + 1} dari {totalQuestions}
                     </Text>
 
                     {currentQuestion.type === 'image-blur' ? (
                       <Box textAlign="center" mb={2}>
-                        <Text fontSize="xl" fontWeight="semibold" mb={4}>
+                        <Text fontSize="lg" fontWeight="semibold" mb={4}>
                           {currentQuestion.prompt || 'Siapakah member JKT48 di gambar berikut?'}
                         </Text>
                         <Image
                           src={currentQuestion.image}
-                          alt="Blurred JKT48 member"
+                          alt="Blurred"
                           mx="auto"
                           boxSize="240px"
                           objectFit="cover"
@@ -241,17 +192,18 @@ function SoloChallenge() {
                         />
                       </Box>
                     ) : (
-                      <Text fontSize="xl" fontWeight="bold" mt={2}>
+                      <Text fontSize="xl" fontWeight="semibold">
                         {currentQuestion.question}
                       </Text>
                     )}
                   </Box>
 
-                  <VStack spacing={3} w="full">
+                  <VStack spacing={4} w="full">
                     {currentQuestion.options.map((opt, idx) => (
                       <Button
                         key={idx}
                         size="lg"
+                        fontSize="lg"
                         colorScheme={selected === opt ? "pink" : "gray"}
                         variant={selected === opt ? "solid" : "outline"}
                         w="full"
@@ -263,7 +215,7 @@ function SoloChallenge() {
                     ))}
                   </VStack>
 
-                  <HStack mt={6} justify="space-between">
+                  <HStack mt={6} justify="space-between" px={4}>
                     <HStack>
                       <FaClock color="gray" />
                       <Text>{timeLeft} detik</Text>
@@ -278,7 +230,7 @@ function SoloChallenge() {
             </AnimatePresence>
           )}
         </Box>
-      </Box>
+      </VStack>
     </Center>
   );
 }
