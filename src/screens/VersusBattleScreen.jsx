@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box, Text, VStack, Button, Progress, useToast, Spinner,
-  CircularProgress, CircularProgressLabel, HStack, Image
-} from '@chakra-ui/react';
+import { Box, Text, VStack, Button, Progress, useToast, Spinner, CircularProgress, CircularProgressLabel, HStack } from '@chakra-ui/react';
 import { getSocket } from '../socket';
 
 const VersusBattleScreen = () => {
@@ -20,19 +17,22 @@ const VersusBattleScreen = () => {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answerResult, setAnswerResult] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(15);
+  const [timeLeft, setTimeLeft] = useState(15); // 15 detik per soal
 
   useEffect(() => {
     const socket = getSocket();
 
     socket.on("newQuestion", (data) => {
       console.log("[Socket] newQuestion", data);
-      setQuestion(data);
+      setQuestion({
+        text: data.question,
+        options: data.options
+      });
       setQuestionNumber(data.questionNumber);
       setTotalQuestions(data.totalQuestions);
       setSelectedAnswer(null);
       setAnswerResult(null);
-      setTimeLeft(15);
+      setTimeLeft(15); // reset timer tiap soal baru
     });
 
     socket.on("answerResult", (result) => {
@@ -63,10 +63,11 @@ const VersusBattleScreen = () => {
     };
   }, [navigate, toast]);
 
+  // Timer countdown
   useEffect(() => {
     if (!question || selectedAnswer !== null) return;
     if (timeLeft <= 0) {
-      handleAnswer("");
+      handleAnswer(""); // submit kosong kalau waktu habis
       return;
     }
     const timer = setTimeout(() => {
@@ -95,27 +96,9 @@ const VersusBattleScreen = () => {
             </CircularProgress>
           </HStack>
 
-          {/* Soal image-blur */}
-          {question.type === 'image-blur' ? (
-            <Box textAlign="center" mb={4}>
-              <Text fontSize="lg" fontWeight="semibold" mb={4}>
-                {question.prompt || 'Siapakah member JKT48 di gambar berikut?'}
-              </Text>
-              <Image
-                src={question.image}
-                alt="Blurred"
-                mx="auto"
-                boxSize="240px"
-                objectFit="cover"
-                borderRadius="lg"
-                filter="blur(10px)"
-              />
-            </Box>
-          ) : (
-            <Text fontSize="xl" fontWeight="bold" mb={4}>
-              {question.text}
-            </Text>
-          )}
+          <Text fontSize="xl" fontWeight="bold" mb={4}>
+            {question.text}
+          </Text>
 
           <VStack spacing={3}>
             {!answerResult ? (
