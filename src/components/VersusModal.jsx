@@ -199,8 +199,8 @@ const VersusModal = () => {
                 </Button>
               </HStack>
 
-              <Button onClick={handleCreateRoom} colorScheme="red" size="lg" w="full" fontWeight="bold" borderRadius="full">
-                🎯 Buat Room Baru
+              <Button onClick={handleCreateRoom} colorScheme="red" size="lg" w="full" fontWeight="bold" borderRadius="full" isDisabled variant="outline">
+              🎯 Buat Room Baru (SOON)
               </Button>
             </VStack>
           </ModalBody>
