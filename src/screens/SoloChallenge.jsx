@@ -192,9 +192,11 @@ function SoloChallenge() {
                         />
                       </Box>
                     ) : (
-                      <Text fontSize="xl" fontWeight="semibold">
-                        {currentQuestion.question}
-                      </Text>
+                      <Box maxH="300px" overflowY="auto" px={2}>
+                        <Text fontSize="xl" fontWeight="semibold">
+                          {currentQuestion.question}
+                        </Text>
+                      </Box>
                     )}
                   </Box>
 
@@ -203,12 +205,18 @@ function SoloChallenge() {
                       <Button
                         key={idx}
                         size="lg"
-                        fontSize="lg"
+                        fontSize="md"
                         colorScheme={selected === opt ? "pink" : "gray"}
                         variant={selected === opt ? "solid" : "outline"}
-                        w="full"
                         onClick={() => handleAnswer(opt)}
                         isDisabled={selected !== null}
+                        whiteSpace="normal"
+                        textAlign="left"
+                        px={6}
+                        py={4}
+                        maxW="90%"
+                        alignSelf="center"
+                        boxShadow="md"
                       >
                         {opt}
                       </Button>
