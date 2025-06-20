@@ -194,13 +194,13 @@ const VersusModal = () => {
                   onChange={(e) => setRoomCode(e.target.value)}
                   borderRadius="full"
                 />
-                <Button colorScheme="red" borderRadius="full" onClick={handleJoinRoom} isDisabled variant="outline">
+                <Button colorScheme="red" borderRadius="full" onClick={handleJoinRoom} >
                   Gabung
                 </Button>
               </HStack>
 
-              <Button onClick={handleCreateRoom} colorScheme="red" size="lg" w="full" fontWeight="bold" borderRadius="full" isDisabled variant="outline">
-              🎯 Buat Room Baru (SOON)
+              <Button onClick={handleCreateRoom} colorScheme="red" size="lg" w="full" fontWeight="bold" borderRadius="full">
+              🎯 Buat Room Baru
               </Button>
             </VStack>
           </ModalBody>
