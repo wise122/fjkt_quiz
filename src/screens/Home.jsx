@@ -11,7 +11,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
-import { MdQuiz, MdFeedback, MdStar } from "react-icons/md"; // Tambahkan ikon baru
+import { MdQuiz, MdFeedback } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import VersusModal from "../components/VersusModal";
 import SoloModal from "../components/SoloModal";
@@ -39,7 +39,7 @@ function Home() {
   return (
     <Center
       minH="100vh"
-      px={4}
+      px={{ base: 2, md: 4 }}
       bgGradient="linear(to-r, red.400, gray.100, red.400, white)"
       bgSize="200% 200%"
       animation={`${gradientAnimation} 12s ease infinite`}
@@ -48,7 +48,7 @@ function Home() {
         <Box
           bg={bg}
           backdropFilter="blur(14px)"
-          p={14}
+          p={{ base: 6, md: 14 }}
           rounded="3xl"
           shadow="2xl"
           maxW="lg"
@@ -61,14 +61,14 @@ function Home() {
         >
           <Icon
             as={MdQuiz}
-            boxSize={24}
+            boxSize={{ base: 16, md: 24 }}
             color="red.400"
             mb={4}
             _hover={{ transform: "rotate(10deg)", transition: "0.3s" }}
           />
           <Heading
             color={headingColor}
-            fontSize={{ base: "4xl", md: "5xl" }}
+            fontSize={{ base: "3xl", md: "5xl" }}
             fontWeight="extrabold"
             letterSpacing="wide"
             mb={4}
@@ -77,7 +77,7 @@ function Home() {
             Quiz Interaktif JKT48
           </Heading>
           <Text
-            fontSize={{ base: "lg", md: "xl" }}
+            fontSize={{ base: "md", md: "xl" }}
             color={textColor}
             maxW="md"
             mx="auto"

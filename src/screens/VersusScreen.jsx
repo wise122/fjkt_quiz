@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Button, Center, Heading, VStack, Avatar, Text, HStack,
+  Box, Button, Center, Heading, VStack, Avatar, Text, Flex,
   useToast, Divider
 } from "@chakra-ui/react";
 import { FaCheckCircle } from "react-icons/fa";
@@ -20,10 +20,8 @@ const VersusScreen = () => {
   const [playerId, setPlayerId] = useState(localStorage.getItem("playerId") || null);
   const [isHost, setIsHost] = useState(false);
   const [playerIndex, setPlayerIndex] = useState(null);
-
   const [player, setPlayer] = useState({ name: username, avatar, member });
   const [opponent, setOpponent] = useState({ name: "", avatar: "", member: "" });
-
   const [isMyReady, setIsMyReady] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
   const [isMatched, setIsMatched] = useState(localStorage.getItem("isMatched") === "true");
@@ -32,19 +30,13 @@ const VersusScreen = () => {
     if (!username) return;
 
     const handleConnect = () => {
-      console.log("🔁 Connected");
-    
-      // Coba resume session jika ada playerId sebelumnya
       const storedPlayerId = localStorage.getItem("playerId");
       if (storedPlayerId) {
-        console.log("🔄 Sending resumeSession...");
         socket.emit("resumeSession", { previousPlayerId: storedPlayerId });
       } else {
-        console.log("🔎 Sending findMatch...");
         socket.emit("findMatch", { username, avatar, member });
       }
     };
-    
 
     const handleMatchFound = (data) => {
       setIsMatched(true);
@@ -56,8 +48,6 @@ const VersusScreen = () => {
       setPlayerIndex(data.playerIndex);
       setPlayer({ name: data.playerName, avatar: data.playerAvatar, member: data.playerMember });
       setOpponent({ name: data.opponentName, avatar: data.opponentAvatar, member: data.opponentMember });
-      localStorage.setItem("roomId", data.roomId);
-      localStorage.setItem("playerId", data.playerId);
     };
 
     const handleBattleStarted = ({ roomId }) => {
@@ -96,17 +86,13 @@ const VersusScreen = () => {
       localStorage.removeItem("playerId");
     };
 
-    // Bind event
     socket.on("connect", handleConnect);
     socket.on("matchFound", handleMatchFound);
     socket.on("battleStarted", handleBattleStarted);
     socket.on("playerReadyUpdate", handlePlayerReadyUpdate);
     socket.on("opponentLeft", handleOpponentLeft);
 
-    // Cek langsung saat mount
-    if (socket.connected) {
-      handleConnect();
-    }
+    if (socket.connected) handleConnect();
 
     return () => {
       socket.off("connect", handleConnect);
@@ -128,21 +114,34 @@ const VersusScreen = () => {
 
   const handleLeave = () => {
     socket.emit("leaveRoom", { roomId });
-    localStorage.removeItem("isMatched");
-    localStorage.removeItem("roomId");
-    localStorage.removeItem("playerId");
+    localStorage.clear();
     window.location.href = "/";
   };
 
   return (
     <Center minH="100vh" bg="#FFF5F7" px={4}>
-      <Box bg="white" p={8} borderRadius="xl" shadow="md" border="2px solid #FBB6CE" maxW="md" w="full" textAlign="center">
+      <Box
+        bg="white"
+        p={{ base: 4, md: 8 }}
+        borderRadius="xl"
+        shadow="md"
+        border="2px solid #FBB6CE"
+        maxW={{ base: "95%", md: "md" }}
+        w="full"
+        textAlign="center"
+      >
         <Heading size="md" color="pink.500" mb={1}>🎤 JKT48 Quiz Battle</Heading>
         <Text fontSize="sm" color="gray.500" mb={4}>
           Room ID: <strong>{roomId || "Mencari lawan..."}</strong>
         </Text>
 
-        <HStack spacing={8} justify="center" mb={4}>
+        <Flex
+          direction={{ base: "column", md: "row" }}
+          justify="center"
+          align="center"
+          mb={4}
+          gap={{ base: 4, md: 8 }}
+        >
           <VStack spacing={2}>
             <Avatar src={player.avatar} size="xl" name={player.name} border="2px solid #F687B3" />
             <Text fontWeight="bold" fontSize="sm">{player.name}</Text>
@@ -171,7 +170,7 @@ const VersusScreen = () => {
               </>
             )}
           </VStack>
-        </HStack>
+        </Flex>
 
         <Divider my={4} />
         <Text fontSize="sm" color="gray.500" mb={4}>

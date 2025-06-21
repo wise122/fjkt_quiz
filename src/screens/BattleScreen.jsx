@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  Box, Button, Center, Heading, VStack, Text, Progress, useToast, CircularProgress, CircularProgressLabel
+  Box, Button, Center, Heading, VStack, Text, Progress, useToast,
+  CircularProgress, CircularProgressLabel, useBreakpointValue
 } from "@chakra-ui/react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getSocket } from "../socket";
@@ -23,7 +24,9 @@ const BattleScreen = () => {
   const [timeLeft, setTimeLeft] = useState(20);
   const [timerInterval, setTimerInterval] = useState(null);
 
-  // Handle pertanyaan baru
+  const circularSize = useBreakpointValue({ base: "60px", md: "80px" });
+  const circularFontSize = useBreakpointValue({ base: "lg", md: "xl" });
+
   useEffect(() => {
     if (!socket) return;
 
@@ -54,7 +57,6 @@ const BattleScreen = () => {
     };
   }, [socket, navigate]);
 
-  // Timer countdown
   useEffect(() => {
     if (!question) return;
     if (timerInterval) clearInterval(timerInterval);
@@ -64,7 +66,7 @@ const BattleScreen = () => {
         if (prev <= 1) {
           clearInterval(interval);
           if (!selectedAnswer && !isSubmitting) {
-            handleAnswer(null); // Auto submit kosong jika habis waktu
+            handleAnswer(null);
           }
           return 0;
         }
@@ -83,19 +85,39 @@ const BattleScreen = () => {
   };
 
   return (
-    <Center minH="100vh" bg="#FFF5F7" px={4}>
-      <Box bg="white" p={10} borderRadius="2xl" shadow="xl" border="3px solid #FBB6CE" maxW="lg" w="full" textAlign="center">
-        <Heading size="lg" color="pink.500" mb={6}>🎯 Battle Quiz</Heading>
+    <Center minH="100vh" bg="#FFF5F7" px={{ base: 2, md: 4 }}>
+      <Box
+        bg="white"
+        p={{ base: 5, md: 10 }}
+        borderRadius="2xl"
+        shadow="xl"
+        border="3px solid #FBB6CE"
+        maxW={{ base: "95%", md: "lg" }}
+        w="full"
+        textAlign="center"
+      >
+        <Heading size={{ base: "md", md: "lg" }} color="pink.500" mb={{ base: 4, md: 6 }}>
+          🎯 Battle Quiz
+        </Heading>
 
-        <Progress value={(questionNumber / totalQuestions) * 100} mb={6} borderRadius="full" colorScheme="pink" />
+        <Progress value={(questionNumber / totalQuestions) * 100} mb={{ base: 4, md: 6 }} borderRadius="full" colorScheme="pink" />
 
         {question ? (
           <>
-            <Box bg="pink.50" p={6} borderRadius="xl" shadow="md" mb={6} minH="150px">
-              <Text fontSize="xl" fontWeight="semibold">{question.question}</Text>
+            <Box
+              bg="pink.50"
+              p={{ base: 4, md: 6 }}
+              borderRadius="xl"
+              shadow="md"
+              mb={{ base: 4, md: 6 }}
+              minH={{ base: "120px", md: "150px" }}
+            >
+              <Text fontSize={{ base: "md", md: "xl" }} fontWeight="semibold">
+                {question.question}
+              </Text>
             </Box>
 
-            <VStack spacing={4}>
+            <VStack spacing={{ base: 3, md: 4 }}>
               {question.options.map((opt, idx) => (
                 <Button
                   key={idx}
@@ -109,22 +131,22 @@ const BattleScreen = () => {
                   }
                   isDisabled={!!answerResult || isSubmitting}
                   onClick={() => handleAnswer(opt)}
-                  size="lg"
+                  size={{ base: "md", md: "lg" }}
                 >
                   {opt}
                 </Button>
               ))}
             </VStack>
 
-            <Box mt={6}>
-              <CircularProgress value={(timeLeft / 20) * 100} color="pink.400" size="80px" thickness="10px">
-                <CircularProgressLabel fontSize="xl">{timeLeft}s</CircularProgressLabel>
+            <Box mt={{ base: 5, md: 6 }}>
+              <CircularProgress value={(timeLeft / 20) * 100} color="pink.400" size={circularSize} thickness="10px">
+                <CircularProgressLabel fontSize={circularFontSize}>{timeLeft}s</CircularProgressLabel>
               </CircularProgress>
             </Box>
 
             {answerResult && (
-              <Box mt={4}>
-                <Text color="green.500" fontWeight="bold" fontSize="lg">
+              <Box mt={{ base: 3, md: 4 }}>
+                <Text color="green.500" fontWeight="bold" fontSize={{ base: "md", md: "lg" }}>
                   {answerResult.answers[playerId]?.isCorrect ? "✅ Jawaban kamu benar!" : "❌ Jawaban kamu salah!"}
                 </Text>
               </Box>
