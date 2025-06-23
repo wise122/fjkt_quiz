@@ -35,10 +35,14 @@ const VersusRoom = () => {
   useEffect(() => {
     connectSocket("manual");
     const socket = getSocket();
-
+  
+    console.log("🔌 Socket connected for VersusRoom");
+  
     socket.emit("joinRoom", { roomCode, username, avatar, member });
-
+    console.log("📩 joinRoom emitted", { roomCode, username });
+  
     socket.on("joinedRoom", (data) => {
+      console.log("✅ joinedRoom:", data);
       setPlayerId(data.playerId);
       setIsHost(data.isHost);
       localStorage.setItem("playerId", data.playerId);
@@ -47,8 +51,9 @@ const VersusRoom = () => {
         setDifficulty(data.settings.difficulty);
       }
     });
-
+  
     socket.on("matchFound", (data) => {
+      console.log("🎯 matchFound:", data);
       setPlayerId(data.playerId);
       setIsHost(data.isHost);
       if (data.opponentName) {
@@ -59,45 +64,55 @@ const VersusRoom = () => {
         setDifficulty(data.settings.difficulty);
       }
     });
-
+  
     socket.on("roomUpdate", ({ playerCount }) => {
+      console.log("🔄 roomUpdate: playerCount", playerCount);
       if (playerCount === 2) {
         toast({ title: "Lawan sudah masuk", status: "info", duration: 1500, isClosable: true });
       }
     });
-
+  
     socket.on("playerReadyUpdate", ({ player1Ready, player2Ready }) => {
+      console.log("✅ playerReadyUpdate:", { player1Ready, player2Ready });
       const both = player1Ready && player2Ready;
       setBothReady(both);
     });
-
+  
     socket.on("settingUpdated", (newSettings) => {
+      console.log("⚙️ settingUpdated:", newSettings);
       setQuestionCount(newSettings.questionCount);
       setDifficulty(newSettings.difficulty);
       toast({ title: "Pengaturan diperbarui", status: "info", duration: 1500 });
     });
-
+  
     socket.on("opponentLeft", () => {
+      console.warn("🚪 opponentLeft detected");
       toast({ title: "Lawan keluar", status: "warning", duration: 2000, isClosable: true });
       setOpponent(null);
       setBothReady(false);
       navigate("/"); 
     });
-
+  
     socket.on("battleStarted", ({ roomId }) => {
+      console.log("🚀 battleStarted:", roomId);
       const savedPlayerId = localStorage.getItem("playerId");
       navigate(`/versus/battle/${roomId}?playerId=${savedPlayerId}`);
     });
-
+  
     socket.on("chatMessage", ({ username: senderName, message, avatar }) => {
+      console.log("💬 chatMessage received:", { senderName, message });
       setChatMessages(prev => [...prev, { username: senderName, message, avatar }].slice(-50));
       if (!isChatOpen && senderName !== username) {
         setUnreadCount(prev => prev + 1);
       }
     });
-
-    return () => socket.off();
+  
+    return () => {
+      console.log("🧹 Cleaning up VersusRoom listeners");
+      socket.off();
+    };
   }, [roomCode, username, avatar, member, navigate, toast, isChatOpen]);
+  
 
   useEffect(() => {
     if (chatBoxRef.current) {
