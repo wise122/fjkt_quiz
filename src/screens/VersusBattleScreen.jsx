@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Text, VStack, Button, Progress, useToast,
-  Spinner, CircularProgress, CircularProgressLabel, HStack, Stack
+  Spinner, CircularProgress, CircularProgressLabel, HStack
 } from '@chakra-ui/react';
 import { getSocket } from '../socket';
 
@@ -34,7 +34,9 @@ const VersusBattleScreen = () => {
       setTimeLeft(15);
     });
 
-    socket.on("answerResult", (result) => setAnswerResult(result));
+    socket.on("answerResult", (result) => {
+      setAnswerResult(result);
+    });
 
     socket.on("battleFinished", (result) => {
       toast({ title: "Battle selesai!", status: "success", duration: 1500 });
@@ -81,7 +83,7 @@ const VersusBattleScreen = () => {
           rounded="xl"
           shadow="lg"
           w="full"
-          maxW={{ base: "95%", md: "600px" }}
+          maxW="600px"
         >
           <HStack justify="space-between" mb={3}>
             <Text fontSize="sm" color="gray.400">
@@ -92,7 +94,7 @@ const VersusBattleScreen = () => {
             </CircularProgress>
           </HStack>
 
-          <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" mb={4} textAlign="center">
+          <Text fontSize="xl" fontWeight="bold" mb={4} textAlign="center">
             {question.text}
           </Text>
 
@@ -104,10 +106,9 @@ const VersusBattleScreen = () => {
                   colorScheme={selectedAnswer === opt ? "blue" : "gray"}
                   onClick={() => handleAnswer(opt)}
                   w="full"
-                  size={{ base: "md", md: "lg" }}
+                  size="lg"
                   isDisabled={selectedAnswer !== null}
                   whiteSpace="normal"
-                  textAlign="center"
                 >
                   {opt}
                 </Button>
