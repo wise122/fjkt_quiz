@@ -16,6 +16,8 @@ const ResultScreen = () => {
     opponentScore = 0,
     yourAvatar = "/images/your-avatar.png",
     opponentAvatar = "/images/opponent-avatar.png",
+    yourUsername = "Kamu",
+    opponentUsername = "Lawan",
     roomId = null
   } = location.state || {};
 
@@ -57,7 +59,7 @@ const ResultScreen = () => {
     if (chatInput.trim() === "") return;
     socket.emit("chatMessage", {
       roomId,
-      username: "Kamu",
+      username: yourUsername,
       avatar: yourAvatar,
       message: chatInput
     });
@@ -89,7 +91,7 @@ const ResultScreen = () => {
         <Flex justify="center" align="center" w="full" gap={4}>
           <VStack>
             <Avatar src={yourAvatar} size="2xl" borderWidth="4px" borderColor="pink.400" />
-            <Text fontWeight="bold" fontSize="lg" color="pink.600">Kamu</Text>
+            <Text fontWeight="bold" fontSize="lg" color="pink.600">{yourUsername}</Text>
             <Text fontSize="4xl" color="pink.500">{yourScore}</Text>
           </VStack>
 
@@ -97,7 +99,7 @@ const ResultScreen = () => {
 
           <VStack>
             <Avatar src={opponentAvatar} size="2xl" borderWidth="4px" borderColor="blue.400" />
-            <Text fontWeight="bold" fontSize="lg" color="blue.600">Lawan</Text>
+            <Text fontWeight="bold" fontSize="lg" color="blue.600">{opponentUsername}</Text>
             <Text fontSize="4xl" color="blue.500">{opponentScore}</Text>
           </VStack>
         </Flex>

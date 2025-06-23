@@ -22,15 +22,17 @@ const BattleScreen = () => {
   const [questionNumber, setQuestionNumber] = useState(1);
   const [totalQuestions, setTotalQuestions] = useState(10);
   const [timeLeft, setTimeLeft] = useState(20);
-  const [timerInterval, setTimerInterval] = useState(null);
-
   const circularSize = useBreakpointValue({ base: "60px", md: "80px" });
   const circularFontSize = useBreakpointValue({ base: "lg", md: "xl" });
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("newQuestion", (data) => {
+    const handleNewQuestion = (data) => {
+      if (!data || !data.question || !Array.isArray(data.options)) {
+        toast({ title: "Error menerima soal", status: "error" });
+        return;
+      }
       setQuestion(data);
       setSelectedAnswer(null);
       setAnswerResult(null);
@@ -38,29 +40,57 @@ const BattleScreen = () => {
       setQuestionNumber(data.questionNumber);
       setTotalQuestions(data.totalQuestions);
       setTimeLeft(20);
-    });
+    };
 
-    socket.on("answerResult", (result) => {
+    const handleAnswerResult = (result) => {
       setAnswerResult(result);
-      clearInterval(timerInterval);
-    });
+    };
 
-    socket.on("battleFinished", (data) => {
-      const { yourScore, opponentScore, totalQuestions, yourAvatar, opponentAvatar } = data;
-      navigate("/result", { state: { yourScore, opponentScore, yourAvatar, opponentAvatar } });
-    });
+    const handleBattleFinished = (data) => {
+      const {
+        yourScore,
+        opponentScore,
+        totalQuestions,
+        yourAvatar,
+        opponentAvatar,
+        yourUsername,
+        opponentUsername,
+        roomId
+      } = data;
+    
+      navigate("/result", {
+        state: {
+          yourScore,
+          opponentScore,
+          yourAvatar,
+          opponentAvatar,
+          yourUsername,
+          opponentUsername,
+          roomId
+        }
+      });
+    };
+    
+    const handleOpponentLeft = () => {
+      toast({ title: "Lawan keluar", status: "warning", duration: 2000 });
+      navigate("/");
+    };
+
+    socket.on("newQuestion", handleNewQuestion);
+    socket.on("answerResult", handleAnswerResult);
+    socket.on("battleFinished", handleBattleFinished);
+    socket.on("opponentLeft", handleOpponentLeft);
 
     return () => {
-      socket.off("newQuestion");
-      socket.off("answerResult");
-      socket.off("battleFinished");
+      socket.off("newQuestion", handleNewQuestion);
+      socket.off("answerResult", handleAnswerResult);
+      socket.off("battleFinished", handleBattleFinished);
+      socket.off("opponentLeft", handleOpponentLeft);
     };
-  }, [socket, navigate]);
+  }, [socket, navigate, toast]);
 
   useEffect(() => {
     if (!question) return;
-    if (timerInterval) clearInterval(timerInterval);
-
     const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -73,12 +103,11 @@ const BattleScreen = () => {
         return prev - 1;
       });
     }, 1000);
-    setTimerInterval(interval);
-
     return () => clearInterval(interval);
-  }, [question]);
+  }, [question, selectedAnswer, isSubmitting]);
 
   const handleAnswer = (answer) => {
+    if (isSubmitting) return;
     setSelectedAnswer(answer);
     setIsSubmitting(true);
     socket.emit("submitAnswer", { roomId, playerId, answer });
@@ -117,26 +146,30 @@ const BattleScreen = () => {
               </Text>
             </Box>
 
-            <VStack spacing={{ base: 3, md: 4 }}>
-              {question.options.map((opt, idx) => (
-                <Button
-                  key={idx}
-                  w="100%"
-                  colorScheme={
-                    answerResult ? (
-                      opt === question.correctAnswer
-                        ? "green"
-                        : (selectedAnswer === opt ? "red" : "gray")
-                    ) : (selectedAnswer === opt ? "blue" : "pink")
-                  }
-                  isDisabled={!!answerResult || isSubmitting}
-                  onClick={() => handleAnswer(opt)}
-                  size={{ base: "md", md: "lg" }}
-                >
-                  {opt}
-                </Button>
-              ))}
-            </VStack>
+            {question?.options?.length > 0 ? (
+              <VStack spacing={{ base: 3, md: 4 }}>
+                {question.options.map((opt, idx) => (
+                  <Button
+                    key={idx}
+                    w="100%"
+                    colorScheme={
+                      answerResult ? (
+                        opt === question.correctAnswer
+                          ? "green"
+                          : (selectedAnswer === opt ? "red" : "gray")
+                      ) : (selectedAnswer === opt ? "blue" : "pink")
+                    }
+                    isDisabled={!!answerResult || isSubmitting}
+                    onClick={() => handleAnswer(opt)}
+                    size={{ base: "md", md: "lg" }}
+                  >
+                    {opt}
+                  </Button>
+                ))}
+              </VStack>
+            ) : (
+              <Text fontSize="lg" color="gray.500">Tidak ada opsi jawaban.</Text>
+            )}
 
             <Box mt={{ base: 5, md: 6 }}>
               <CircularProgress value={(timeLeft / 20) * 100} color="pink.400" size={circularSize} thickness="10px">
@@ -147,7 +180,7 @@ const BattleScreen = () => {
             {answerResult && (
               <Box mt={{ base: 3, md: 4 }}>
                 <Text color="green.500" fontWeight="bold" fontSize={{ base: "md", md: "lg" }}>
-                  {answerResult.answers[playerId]?.isCorrect ? "✅ Jawaban kamu benar!" : "❌ Jawaban kamu salah!"}
+                  {answerResult.answers?.[playerId]?.isCorrect ? "✅ Jawaban kamu benar!" : "❌ Jawaban kamu salah!"}
                 </Text>
               </Box>
             )}

@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   Box, Button, Center, Heading, VStack, Avatar, Text, Flex,
-  useToast, Divider, HStack, Input, Badge
+  useToast, Badge, Select, IconButton, Collapse, HStack, Input, Stack, Circle
 } from "@chakra-ui/react";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCog, FaComments } from "react-icons/fa";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getSocket } from "../socket";
 
@@ -26,11 +26,14 @@ const VersusScreen = () => {
   const [opponentReady, setOpponentReady] = useState(false);
   const [isMatched, setIsMatched] = useState(localStorage.getItem("isMatched") === "true");
 
-  // Chat related
+  const [questionCount, setQuestionCount] = useState(10);
+  const [difficulty, setDifficulty] = useState("normal");
+  const [showSettings, setShowSettings] = useState(true);
+
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const chatBoxRef = useRef(null);
 
   useEffect(() => {
@@ -55,6 +58,11 @@ const VersusScreen = () => {
       setPlayerIndex(data.playerIndex);
       setPlayer({ name: data.playerName, avatar: data.playerAvatar, member: data.playerMember });
       setOpponent({ name: data.opponentName, avatar: data.opponentAvatar, member: data.opponentMember });
+
+      if (data.settings) {
+        setQuestionCount(data.settings.questionCount);
+        setDifficulty(data.settings.difficulty);
+      }
     };
 
     const handleBattleStarted = ({ roomId }) => {
@@ -84,6 +92,17 @@ const VersusScreen = () => {
       resetMatch();
     };
 
+    const handleSettingUpdated = (newSettings) => {
+      setQuestionCount(newSettings.questionCount);
+      setDifficulty(newSettings.difficulty);
+      toast({
+        title: "Pengaturan diperbarui",
+        status: "info",
+        duration: 2000,
+        isClosable: true
+      });
+    };
+
     const handleChatMessage = ({ username, message, avatar }) => {
       setChatMessages(prev => [...prev, { username, message, avatar }].slice(-50));
       if (!isChatOpen) setUnreadCount(prev => prev + 1);
@@ -93,9 +112,7 @@ const VersusScreen = () => {
       setIsMatched(false);
       setRoomId(null);
       setPlayerId(null);
-      localStorage.removeItem("isMatched");
-      localStorage.removeItem("roomId");
-      localStorage.removeItem("playerId");
+      localStorage.clear();
     };
 
     socket.on("connect", handleConnect);
@@ -103,13 +120,11 @@ const VersusScreen = () => {
     socket.on("battleStarted", handleBattleStarted);
     socket.on("playerReadyUpdate", handlePlayerReadyUpdate);
     socket.on("opponentLeft", handleOpponentLeft);
+    socket.on("settingUpdated", handleSettingUpdated);
     socket.on("chatMessage", handleChatMessage);
 
     if (socket.connected) handleConnect();
-
-    return () => {
-      socket.off();
-    };
+    return () => { socket.off(); };
   }, [username, avatar, member, playerIndex, navigate, playerId, isMatched, isChatOpen]);
 
   useEffect(() => {
@@ -117,6 +132,13 @@ const VersusScreen = () => {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
     }
   }, [chatMessages]);
+
+  const handleLeave = () => {
+    socket.emit("leaveRoom", { roomId });
+    localStorage.clear();
+    window.location.href = "/";
+  };
+  
 
   const handleReady = () => {
     setIsMyReady(true);
@@ -127,183 +149,142 @@ const VersusScreen = () => {
     socket.emit("startBattle", { roomId });
   };
 
-  const handleLeave = () => {
-    socket.emit("leaveRoom", { roomId });
-    localStorage.clear();
-    window.location.href = "/";
+  const handleUpdateSetting = () => {
+    socket.emit("updateSetting", {
+      roomId,
+      settings: { questionCount, difficulty }
+    });
   };
 
-  const handleSendChat = () => {
+  const sendChat = () => {
     if (chatInput.trim() === "") return;
     socket.emit("chatMessage", { roomId, username, avatar, message: chatInput });
     setChatInput("");
   };
 
-  const openChat = () => {
-    setIsChatOpen(true);
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
     setUnreadCount(0);
   };
 
   return (
-    <Center minH="100vh" bg="#FFF5F7" px={4} position="relative">
-      <Box
-        bg="white"
-        p={{ base: 4, md: 8 }}
-        borderRadius="xl"
-        shadow="md"
-        border="2px solid #FBB6CE"
-        maxW={{ base: "95%", md: "md" }}
-        w="full"
-        textAlign="center"
-      >
-        <Heading size="md" color="pink.500" mb={1}>🎤 JKT48 Quiz Battle</Heading>
-        <Text fontSize="sm" color="gray.500" mb={4}>
-          Room ID: <strong>{roomId || "Mencari lawan..."}</strong>
-        </Text>
+    <Center minH="100vh" bg="#FFF5F7" px={2} position="relative">
+      <Box bg="white" p={{ base: 3, md: 8 }} borderRadius="2xl" shadow="lg" border="2px solid #FBB6CE"
+        maxW={{ base: "xs", md: "md" }} w="full" textAlign="center">
 
-        <Flex direction={{ base: "column", md: "row" }} justify="center" align="center" mb={4} gap={{ base: 4, md: 8 }}>
-          <VStack spacing={2}>
-            <Avatar src={player.avatar} size="xl" name={player.name} border="2px solid #F687B3" />
-            <Text fontWeight="bold" fontSize="sm">{player.name}</Text>
-            {isMyReady ? (
-              <Button size="sm" leftIcon={<FaCheckCircle />} colorScheme="green" borderRadius="full" px={6} isDisabled>Siap</Button>
-            ) : (
-              <Button size="sm" colorScheme="pink" borderRadius="full" px={6} onClick={handleReady}>Siap!</Button>
-            )}
-          </VStack>
+        <Heading size="lg" color="pink.500" mb={2}>🎤 JKT48 Quiz Battle</Heading>
+        <Badge colorScheme="pink" mb={4}>Room ID: {roomId || "Mencari lawan..."}</Badge>
 
-          <Text fontSize="2xl" color="gray.600">VS</Text>
+        <Flex direction={{ base: "column", md: "row" }} justify="center" align="center" mb={6} gap={4}>
+          {/* Player Card */}
+          <Box bg="pink.50" borderRadius="xl" p={{ base: 2, md: 4 }} border="2px solid #FBB6CE"
+            w={{ base: "100px", md: "150px" }}>
+            <VStack spacing={2}>
+              <Avatar src={player.avatar} size={{ base: "md", md: "xl" }} name={player.name} border="2px solid #F687B3" />
+              <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>{player.name}</Text>
+              {isMyReady ? (
+                <Badge colorScheme="green" px={3} py={1} borderRadius="full">Siap</Badge>
+              ) : (
+                <Button size="sm" colorScheme="pink" borderRadius="full" onClick={handleReady}>Siap!</Button>
+              )}
+            </VStack>
+          </Box>
 
-          <VStack spacing={2}>
-            {opponent.avatar ? (
-              <>
-                <Avatar src={opponent.avatar} size="xl" name={opponent.name} />
-                <Text fontWeight="bold" fontSize="sm">{opponent.name}</Text>
-                <Button size="sm" variant="outline" colorScheme={opponentReady ? "green" : "gray"} borderRadius="full" px={6} isDisabled>
-                  {opponentReady ? "Siap" : "Menunggu siap..."}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Avatar size="xl" name="Menunggu..." />
-                <Text fontWeight="bold" fontSize="sm" color="gray.400">Menunggu lawan...</Text>
-              </>
-            )}
-          </VStack>
+          <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold" color="gray.500">VS</Text>
+
+          {/* Opponent Card */}
+          <Box bg="pink.50" borderRadius="xl" p={{ base: 2, md: 4 }} border="2px solid #FBB6CE"
+            w={{ base: "100px", md: "150px" }}>
+            <VStack spacing={2}>
+              {opponent.avatar ? (
+                <>
+                  <Avatar src={opponent.avatar} size={{ base: "md", md: "xl" }} name={opponent.name} />
+                  <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>{opponent.name}</Text>
+                  <Badge colorScheme={opponentReady ? "green" : "gray"} px={3} py={1} borderRadius="full">
+                    {opponentReady ? "Siap" : "Menunggu"}
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  <Avatar size={{ base: "md", md: "xl" }} name="Menunggu..." />
+                  <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }} color="gray.400">Menunggu...</Text>
+                </>
+              )}
+            </VStack>
+          </Box>
         </Flex>
 
-        <Divider my={4} />
-        <Text fontSize="sm" color="gray.500" mb={4}>
-          Tekan tombol <strong>“Siap!”</strong> jika kamu sudah siap bertanding~
-        </Text>
+        {/* Pengaturan Quiz */}
+        <Box p={3} bg="pink.50" borderRadius="md" mb={4} border="1px solid #FBB6CE">
+          <Flex justify="center" align="center" mb={2}>
+            <Text fontWeight="bold" mr={2}>Pengaturan Quiz</Text>
+            <IconButton icon={<FaCog />} size="sm" variant="outline" colorScheme="pink" onClick={() => setShowSettings(!showSettings)} />
+          </Flex>
+
+          <Collapse in={showSettings}>
+            <VStack spacing={2}>
+              <HStack justify="center" w="100%">
+                <Text minW="90px" fontSize={{ base: "sm", md: "md" }}>Jumlah Soal:</Text>
+                <Select value={questionCount} onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+                  maxW="100px" size="sm" isDisabled={!isHost}>
+                  {[5, 10, 15, 20].map(num => <option key={num} value={num}>{num}</option>)}
+                </Select>
+              </HStack>
+
+              <HStack justify="center" w="100%">
+                <Text minW="90px" fontSize={{ base: "sm", md: "md" }}>Kesulitan:</Text>
+                <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
+                  maxW="100px" size="sm" isDisabled={!isHost}>
+                  <option value="mudah">Easy</option>
+                  <option value="sedang">Normal</option>
+                  <option value="sulit">Hard</option>
+                </Select>
+              </HStack>
+
+              {isHost && (
+                <Button colorScheme="blue" size="sm" onClick={handleUpdateSetting}>Update</Button>
+              )}
+            </VStack>
+          </Collapse>
+        </Box>
 
         <VStack spacing={3}>
-          <Button colorScheme="blue" onClick={handleLeave}>🏠 Kembali ke Beranda</Button>
+          <Button colorScheme="blue" size="sm" onClick={handleLeave}>🏠 Kembali</Button>
           {isHost && (
-            <Button colorScheme="green" isDisabled={!isMyReady || !opponentReady} onClick={handleStart}>
-              🚀 Mulai!
+            <Button colorScheme="green" size="lg" borderRadius="full"
+              isDisabled={!isMyReady || !opponentReady} onClick={handleStart}>
+              🚀 Mulai Quiz!
             </Button>
           )}
         </VStack>
       </Box>
 
-      {/* Floating Chat Button - mobile */}
-      <Box position="fixed" bottom={4} right={4} zIndex={999} display={{ base: "block", md: "none" }}>
-        <Button colorScheme="pink" borderRadius="full" boxSize="60px" onClick={openChat} position="relative">
-          💬
-          {unreadCount > 0 && (
-            <Box
-              position="absolute"
-              top="-5px"
-              right="-5px"
-              bg="red.500"
-              color="white"
-              fontSize="xs"
-              fontWeight="bold"
-              px={2}
-              py={1}
-              borderRadius="full"
-            >
-              {unreadCount}
-            </Box>
-          )}
-        </Button>
+      {/* Floating Chat */}
+      <Box position="absolute" bottom="5" right="5">
+        <IconButton icon={<FaComments />} colorScheme="pink" size="lg" borderRadius="full" onClick={toggleChat} />
+        {unreadCount > 0 && (
+          <Circle size="5" bg="red.400" color="white" fontSize="xs" position="absolute" top="0" right="0">{unreadCount}</Circle>
+        )}
       </Box>
 
-      {/* Full screen chat on mobile */}
       {isChatOpen && (
-        <Box position="fixed" bottom={0} left={0} right={0} top={0} bg="white" zIndex={1000} p={3} display="flex" flexDirection="column">
-          <HStack justify="space-between" mb={2}>
-            <Heading size="sm" color="pink.500">Live Chat</Heading>
-            <Button size="sm" onClick={() => setIsChatOpen(false)}>Tutup</Button>
-          </HStack>
-          <Divider mb={2} />
-
-          <VStack ref={chatBoxRef} align="stretch" spacing={2} overflowY="auto" flex="1">
+        <Box position="absolute" bottom="20" right="5" bg="white" border="2px solid #FBB6CE"
+          borderRadius="lg" p={3} w="260px" maxH="400px" shadow="lg">
+          <Text fontWeight="bold" mb={2}>Chat Room</Text>
+          <Box overflowY="auto" maxH="250px" ref={chatBoxRef}>
             {chatMessages.map((msg, idx) => (
-              <HStack key={idx} align="start">
+              <HStack key={idx} align="start" mb={2}>
                 <Avatar size="xs" src={msg.avatar} name={msg.username} />
-                <Box>
-                  <Text fontSize="xs" fontWeight="bold">{msg.username}</Text>
-                  <Text fontSize="sm">{msg.message}</Text>
-                </Box>
+                <Box><Text fontWeight="bold" fontSize="sm">{msg.username}</Text><Text fontSize="sm">{msg.message}</Text></Box>
               </HStack>
             ))}
-          </VStack>
-
+          </Box>
           <HStack mt={2}>
-            <Input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Chat..."
-              size="sm"
-              bg="pink.50"
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSendChat(); }}
-            />
-            <Button size="sm" colorScheme="pink" onClick={handleSendChat}>Send</Button>
+            <Input size="sm" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendChat()} />
+            <Button size="sm" colorScheme="pink" onClick={sendChat}>Kirim</Button>
           </HStack>
         </Box>
       )}
-
-      {/* Chat Box Desktop */}
-      <Box
-        position="absolute"
-        bottom={{ base: 4, md: 8 }}
-        right={{ base: 4, md: 8 }}
-        w="300px"
-        bg="white"
-        border="2px solid #FBB6CE"
-        borderRadius="lg"
-        shadow="lg"
-        p={3}
-        display={{ base: "none", md: "flex" }}
-        flexDirection="column"
-        height="400px"
-      >
-        <VStack ref={chatBoxRef} align="stretch" spacing={2} overflowY="auto" flex="1">
-          {chatMessages.map((msg, idx) => (
-            <HStack key={idx} align="start">
-              <Avatar size="xs" src={msg.avatar} name={msg.username} />
-              <Box>
-                <Text fontSize="xs" fontWeight="bold">{msg.username}</Text>
-                <Text fontSize="sm">{msg.message}</Text>
-              </Box>
-            </HStack>
-          ))}
-        </VStack>
-
-        <HStack mt={2}>
-          <Input
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Chat..."
-            size="sm"
-            bg="pink.50"
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSendChat(); }}
-          />
-          <Button size="sm" colorScheme="pink" onClick={handleSendChat}>Send</Button>
-        </HStack>
-      </Box>
     </Center>
   );
 };
