@@ -11,10 +11,8 @@ const VersusRoom = () => {
   const { roomCode } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [type, setType] = useState("campuran");
   const toast = useToast();
   const chatBoxRef = useRef(null);
-  const hasJoinedRef = useRef(false); // prevent double join
 
   const searchParams = new URLSearchParams(location.search);
   const username = searchParams.get("username") || "Kamu";
@@ -37,28 +35,26 @@ const VersusRoom = () => {
   useEffect(() => {
     connectSocket("manual");
     const socket = getSocket();
-
-    if (!hasJoinedRef.current) {
-      hasJoinedRef.current = true;
-      socket.emit("joinRoom", { roomCode, username, avatar, member });
-      console.log("📩 joinRoom emitted", { roomCode, username });
-    }
-
+  
+    console.log("🔌 Socket connected for VersusRoom");
+  
+    socket.emit("joinRoom", { roomCode, username, avatar, member });
+    console.log("📩 joinRoom emitted", { roomCode, username });
+  
     socket.on("joinedRoom", (data) => {
       console.log("✅ joinedRoom:", data);
-      if (!playerId) setPlayerId(data.playerId);
+      setPlayerId(data.playerId);
       setIsHost(data.isHost);
       localStorage.setItem("playerId", data.playerId);
       if (data.settings) {
         setQuestionCount(data.settings.questionCount);
         setDifficulty(data.settings.difficulty);
-        setType(data.settings.type || "campuran");
       }
     });
-
+  
     socket.on("matchFound", (data) => {
       console.log("🎯 matchFound:", data);
-      if (!playerId) setPlayerId(data.playerId);
+      setPlayerId(data.playerId);
       setIsHost(data.isHost);
       if (data.opponentName) {
         setOpponent({ username: data.opponentName, avatar: data.opponentAvatar });
@@ -66,53 +62,57 @@ const VersusRoom = () => {
       if (data.settings) {
         setQuestionCount(data.settings.questionCount);
         setDifficulty(data.settings.difficulty);
-        setType(data.settings.type || "campuran");
       }
     });
-
+  
     socket.on("roomUpdate", ({ playerCount }) => {
       console.log("🔄 roomUpdate: playerCount", playerCount);
       if (playerCount === 2) {
         toast({ title: "Lawan sudah masuk", status: "info", duration: 1500, isClosable: true });
       }
     });
-
+  
     socket.on("playerReadyUpdate", ({ player1Ready, player2Ready }) => {
+      console.log("✅ playerReadyUpdate:", { player1Ready, player2Ready });
       const both = player1Ready && player2Ready;
       setBothReady(both);
     });
-
+  
     socket.on("settingUpdated", (newSettings) => {
+      console.log("⚙️ settingUpdated:", newSettings);
       setQuestionCount(newSettings.questionCount);
       setDifficulty(newSettings.difficulty);
-      setType(newSettings.type || "campuran");
       toast({ title: "Pengaturan diperbarui", status: "info", duration: 1500 });
     });
-
+  
     socket.on("opponentLeft", () => {
+      console.warn("🚪 opponentLeft detected");
       toast({ title: "Lawan keluar", status: "warning", duration: 2000, isClosable: true });
       setOpponent(null);
       setBothReady(false);
-      navigate("/");
+      navigate("/"); 
     });
-
+  
     socket.on("battleStarted", ({ roomId }) => {
+      console.log("🚀 battleStarted:", roomId);
       const savedPlayerId = localStorage.getItem("playerId");
       navigate(`/versus/battle/${roomId}?playerId=${savedPlayerId}`);
     });
-
+  
     socket.on("chatMessage", ({ username: senderName, message, avatar }) => {
-      setChatMessages((prev) => [...prev, { username: senderName, message, avatar }].slice(-50));
+      console.log("💬 chatMessage received:", { senderName, message });
+      setChatMessages(prev => [...prev, { username: senderName, message, avatar }].slice(-50));
       if (!isChatOpen && senderName !== username) {
-        setUnreadCount((prev) => prev + 1);
+        setUnreadCount(prev => prev + 1);
       }
     });
-
+  
     return () => {
+      console.log("🧹 Cleaning up VersusRoom listeners");
       socket.off();
-      console.log("🧹 Cleaned up socket events");
     };
   }, [roomCode, username, avatar, member, navigate, toast, isChatOpen]);
+  
 
   useEffect(() => {
     if (chatBoxRef.current) {
@@ -139,7 +139,7 @@ const VersusRoom = () => {
     const socket = getSocket();
     socket.emit("updateSetting", {
       roomId: roomCode,
-      settings: { questionCount, difficulty, type }
+      settings: { questionCount, difficulty }
     });
   };
 
@@ -153,8 +153,8 @@ const VersusRoom = () => {
   const handleLeaveRoom = () => {
     const socket = getSocket();
     socket.emit("leaveRoom", { roomId: roomCode });
-    localStorage.clear();
-    navigate("/");
+    localStorage.clear(); // Clear semua data
+    navigate("/"); // Balik ke home, bersih total
   };
 
   return (
@@ -219,25 +219,10 @@ const VersusRoom = () => {
                 <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
                   size="sm" maxW="100px" isDisabled={!isHost}>
                   <option value="mudah">Easy</option>
-                  <option value="sedang">Normal</option>
+                  <option value="normal">Normal</option>
                   <option value="sulit">Hard</option>
                 </Select>
               </HStack>
-              <HStack justify="space-between">
-              <Text>Jenis Soal:</Text>
-                  <Select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    size="sm"
-                    maxW="150px"
-                    isDisabled={!isHost}
-                    >
-                    <option value="campuran">Semua</option>
-                    <option value="audio-intro">Audio Intro</option>
-                    <option value="text">Teks</option>
-                  </Select>
-              </HStack>
-
               {isHost && (
                 <Button size="sm" colorScheme="blue" onClick={handleUpdateSetting}>Update</Button>
               )}
@@ -260,7 +245,6 @@ const VersusRoom = () => {
         </VStack>
       </Box>
 
-      {/* Chat Button */}
       <Box position="absolute" bottom={5} right={5}>
         <IconButton icon={<FaComments />} colorScheme="pink" size="lg" borderRadius="full"
           onClick={() => {
@@ -292,7 +276,7 @@ const VersusRoom = () => {
             ))}
           </Box>
           <HStack mt={2}>
-            <Input size="sm" value={chatInput} onChange={(e) => setChatInput(e.target.value)}
+            <Input size="sm" value={chatInput} onChange={(e) => setChatInput(e.target.value)} 
               onKeyDown={(e) => e.key === "Enter" && handleSendChat()} />
             <Button size="sm" colorScheme="pink" onClick={handleSendChat}>Kirim</Button>
           </HStack>

@@ -26,12 +26,7 @@ const VersusBattleScreen = () => {
     const socket = getSocket();
 
     socket.on("newQuestion", (data) => {
-      setQuestion({
-        text: data.question,
-        options: data.options,
-        type: ["text", "audio-intro", "campuran"].includes(data.type) ? data.type : "text",
-        audioUrl: data.audioUrl || null,
-      });
+      setQuestion({ text: data.question, options: data.options });
       setQuestionNumber(data.questionNumber);
       setTotalQuestions(data.totalQuestions);
       setSelectedAnswer(null);
@@ -99,22 +94,10 @@ const VersusBattleScreen = () => {
             </CircularProgress>
           </HStack>
 
-          {/* Judul atau isi soal */}
           <Text fontSize="xl" fontWeight="bold" mb={4} textAlign="center">
             {question.text}
           </Text>
 
-         {/* Render audio jika tipe soal mendukung audio */}
-{["audio-intro", "campuran"].includes(question.type) && question.audioUrl && (
-  <Box mb={4}>
-    <audio key={question.audioUrl} controls style={{ width: '100%' }}>
-  <source src={question.audioUrl} type="audio/mpeg" />
-  Browser kamu tidak mendukung pemutar audio.
-</audio>
-  </Box>
-)}
-
-          {/* Pilihan Jawaban */}
           <VStack spacing={3}>
             {!answerResult ? (
               question.options.map((opt, idx) => (
@@ -141,7 +124,6 @@ const VersusBattleScreen = () => {
             )}
           </VStack>
 
-          {/* Loading jika menunggu lawan */}
           {!answerResult && selectedAnswer && (
             <VStack mt={4}>
               <Spinner color="pink.400" />
@@ -149,14 +131,7 @@ const VersusBattleScreen = () => {
             </VStack>
           )}
 
-          {/* Progress Bar */}
-          <Progress
-            mt={6}
-            value={(questionNumber / totalQuestions) * 100}
-            colorScheme="pink"
-            size="sm"
-            rounded="full"
-          />
+          <Progress mt={6} value={(questionNumber / totalQuestions) * 100} colorScheme="pink" size="sm" rounded="full" />
         </Box>
       ) : (
         <Text fontSize="lg" color="pink.400" fontWeight="bold">Memuat Soal...</Text>
