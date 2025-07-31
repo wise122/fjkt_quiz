@@ -141,6 +141,15 @@ const BattleScreen = () => {
               mb={{ base: 4, md: 6 }}
               minH={{ base: "120px", md: "150px" }}
             >
+              {question.type === "audio-intro" && question.audioUrl && (
+  <Box mb={4}>
+  <audio key={question.audioUrl} controls style={{ width: '100%' }}>
+<source src={question.audioUrl} type="audio/mpeg" />
+Browser kamu tidak mendukung pemutar audio.
+</audio>
+</Box>
+)}
+
               <Text fontSize={{ base: "md", md: "xl" }} fontWeight="semibold">
                 {question.question}
               </Text>

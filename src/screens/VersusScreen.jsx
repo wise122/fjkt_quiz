@@ -10,6 +10,7 @@ import { getSocket } from "../socket";
 const VersusScreen = () => {
   const socket = getSocket();
   const toast = useToast();
+  const [questionType, setQuestionType] = useState("text");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const username = searchParams.get("username");
@@ -62,6 +63,7 @@ const VersusScreen = () => {
       if (data.settings) {
         setQuestionCount(data.settings.questionCount);
         setDifficulty(data.settings.difficulty);
+        setQuestionType(data.settings.type || "text");
       }
     };
 
@@ -94,6 +96,7 @@ const VersusScreen = () => {
 
     const handleSettingUpdated = (newSettings) => {
       setQuestionCount(newSettings.questionCount);
+      setQuestionType(newSettings.type || "text");
       setDifficulty(newSettings.difficulty);
       toast({
         title: "Pengaturan diperbarui",
@@ -152,7 +155,11 @@ const VersusScreen = () => {
   const handleUpdateSetting = () => {
     socket.emit("updateSetting", {
       roomId,
-      settings: { questionCount, difficulty }
+      settings: {
+        questionCount,
+        difficulty,
+        type: questionType
+      }
     });
   };
 
@@ -240,6 +247,16 @@ const VersusScreen = () => {
                   <option value="sulit">Hard</option>
                 </Select>
               </HStack>
+
+              <HStack justify="center" w="100%">
+                <Text minW="90px" fontSize={{ base: "sm", md: "md" }}>Tipe Soal:</Text>
+                <Select value={questionType} onChange={(e) => setQuestionType(e.target.value)}
+                  maxW="150px" size="sm" isDisabled={!isHost}>
+                  <option value="text">Text</option>
+                  <option value="audio-intro">Audio Intro</option>
+                </Select>
+              </HStack>
+
 
               {isHost && (
                 <Button colorScheme="blue" size="sm" onClick={handleUpdateSetting}>Update</Button>
