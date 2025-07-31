@@ -9,6 +9,8 @@ import { getSocket } from '../socket';
 const VersusBattleScreen = () => {
   const { roomCode } = useParams();
   const navigate = useNavigate();
+  const [audio, setAudio] = useState(null);
+  const [audioReady, setAudioReady] = useState(false);
   const toast = useToast();
   const location = useLocation();
 
@@ -63,6 +65,28 @@ const VersusBattleScreen = () => {
   }, [navigate, toast]);
 
   useEffect(() => {
+    if (question?.audioUrl) {
+      const newAudio = new Audio(question.audioUrl);
+      setAudio(newAudio);
+  
+      newAudio.oncanplaythrough = () => {
+        setAudioReady(true);
+      };
+  
+      newAudio.onerror = () => {
+        setAudioReady(false);
+      };
+  
+      newAudio.load();
+    } else {
+      setAudio(null);
+      setAudioReady(false);
+    }
+  }, [question?.audioUrl]);
+  
+
+  
+  useEffect(() => {
     if (!question || selectedAnswer !== null) return;
     if (timeLeft <= 0) {
       handleAnswer("");
@@ -105,12 +129,11 @@ const VersusBattleScreen = () => {
           </Text>
 
          {/* Render audio jika tipe soal mendukung audio */}
-{["audio-intro", "campuran"].includes(question.type) && question.audioUrl && (
+{["audio-intro", "campuran"].includes(question.type) && question.audioUrl && audioReady && (
   <Box mb={4}>
-    <audio key={question.audioUrl} controls style={{ width: '100%' }}>
-  <source src={question.audioUrl} type="audio/mpeg" />
-  Browser kamu tidak mendukung pemutar audio.
-</audio>
+    <Button onClick={() => audio.play()} colorScheme="pink" w="full">
+      🔊 Putar Audio
+    </Button>
   </Box>
 )}
 

@@ -17,6 +17,8 @@ const BattleScreen = () => {
 
   const [question, setQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [audio, setAudio] = useState(null);
+  const [audioReady, setAudioReady] = useState(false);
   const [answerResult, setAnswerResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionNumber, setQuestionNumber] = useState(1);
@@ -24,6 +26,28 @@ const BattleScreen = () => {
   const [timeLeft, setTimeLeft] = useState(20);
   const circularSize = useBreakpointValue({ base: "60px", md: "80px" });
   const circularFontSize = useBreakpointValue({ base: "lg", md: "xl" });
+
+
+
+  useEffect(() => {
+    if (question?.audioUrl) {
+      const newAudio = new Audio(question.audioUrl);
+      setAudio(newAudio);
+  
+      newAudio.oncanplaythrough = () => {
+        setAudioReady(true);
+      };
+  
+      newAudio.onerror = () => {
+        setAudioReady(false);
+      };
+  
+      newAudio.load();
+    } else {
+      setAudio(null);
+      setAudioReady(false);
+    }
+  }, [question?.audioUrl]);
 
   useEffect(() => {
     if (!socket) return;
@@ -141,13 +165,13 @@ const BattleScreen = () => {
               mb={{ base: 4, md: 6 }}
               minH={{ base: "120px", md: "150px" }}
             >
-              {question.type === "audio-intro" && question.audioUrl && (
+               {/* Render audio jika tipe soal mendukung audio */}
+{["audio-intro", "campuran"].includes(question.type) && question.audioUrl && audioReady && (
   <Box mb={4}>
-  <audio key={question.audioUrl} controls style={{ width: '100%' }}>
-<source src={question.audioUrl} type="audio/mpeg" />
-Browser kamu tidak mendukung pemutar audio.
-</audio>
-</Box>
+    <Button onClick={() => audio.play()} colorScheme="pink" w="full">
+      🔊 Putar Audio
+    </Button>
+  </Box>
 )}
 
               <Text fontSize={{ base: "md", md: "xl" }} fontWeight="semibold">
